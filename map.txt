@@ -1,0 +1,39 @@
+bot_locale
+  translate.py (переводы)
+data
+  files
+    cryptoexchange-rates-export.xml (курсы валют)
+  config.ini (конфигурации)
+filters
+  main_filters.py (фильтры для Telebot)
+handlers
+  users
+    general.py (отображение основных пунктов)
+    chat.py (подключение/отключение уведомлений в чатах)
+    disput_deal.py (открытие спора по сделке)
+    exchange.py (процесс обмена)
+    support.py (обращение в поддержкy)
+    admin
+      banks.py (добавление/редактирование банков)
+      countries.py (добавлнеие/редактирование стран)
+      general.py (отображение основных пунктов)
+      open_deals.py (работа с открытыми сделками)
+      open_tickets.py (работа с открытыми запросами в поддержку)
+      pages.py (редактирование страниц)
+      pair.py (добавление/редактирование валютных пар)
+      search.py (поиск сделок пользователя или сделок по id)
+keyboards
+  inline
+    menu.py (клавиатуры)
+states
+  states.py (состояния для Telebot)
+utils
+  db
+    db_api.py (подготовленные запросы в базу данных)
+  misc
+    data.py (парсинг цен)
+    logging.py (настройки логирования)
+  message_templates.py (часто используемые текстовые шаблоны)
+bot.py (запуск бота)
+loader.py (подключение зависимостей)
+tasks.py (задачи)

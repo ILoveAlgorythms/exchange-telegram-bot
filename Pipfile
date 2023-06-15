@@ -1,0 +1,16 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+requests = "*"
+mysql-connector-python = "==8.0.30"
+pytelegrambotapi = "==4.10.0"
+redis = "==4.5.1"
+schedule = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.11"
