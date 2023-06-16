@@ -12,11 +12,10 @@ class AdminKeyboard:
         lang = user['language_code']
         is_break = 'inline_bot_active' if config['technical_break'] == 1 else 'inline_bot_inactive'
         kb = InlineKeyboardMarkup([
-            [InlineKeyboardButton(translate(lang, 'inline_admin_orders').format(stats['deals']), callback_data='admin.open_deals'),
-            InlineKeyboardButton(translate(lang, 'inline_admin_problems_with_orders').format(stats['dealsd']), callback_data='admin.open_disput_deals')],
+            [InlineKeyboardButton(translate(lang, 'inline_admin_orders').format(stats['deals']), callback_data='admin.open_deals')],
+            [InlineKeyboardButton(translate(lang, 'inline_admin_problems_with_orders').format(stats['dealsd']), callback_data='admin.open_disput_deals')],
             [InlineKeyboardButton(translate(lang, 'inline_admin_support_requests').format(stats['open_tickets']), callback_data='admin.support_tickets')],
             [InlineKeyboardButton(translate(lang, 'inline_admin_logs'), callback_data='admin.search_deals')],
-            [InlineKeyboardButton(translate(lang, 'inline_admin_pages'), callback_data='admin.pages')],
             [InlineKeyboardButton(translate(lang, 'inline_admin_params_exchange'), callback_data='admin.params')],
             [InlineKeyboardButton(translate(lang, is_break), callback_data='admin.params_change_techinal_break')],
             [InlineKeyboardButton(translate(lang, 'inline_back_to_main_menu'), callback_data='bot.back_to_main_menu')],
@@ -172,13 +171,14 @@ class AdminKeyboard:
 
     @staticmethod
     def params_exchange(user):
-        """ Параметры обмена
+        """ Настройки бота
         """
         lang = user['language_code']
         kb = InlineKeyboardMarkup([
             [InlineKeyboardButton(translate(lang, 'inline_admin_countries'), callback_data='admin.params_countries')],
             [InlineKeyboardButton(translate(lang, 'inline_admin_banks'), callback_data='admin.params_banks')],
             [InlineKeyboardButton(translate(lang, 'inline_admin_pairs'), callback_data='admin.params_pairs')],
+            [InlineKeyboardButton(translate(lang, 'inline_admin_pages'), callback_data='admin.pages')],
             [InlineKeyboardButton(translate(lang, 'inline_back_to'), callback_data='admin.back_to_home')],
         ])
 

@@ -1,6 +1,39 @@
 import requests
 import xml.etree.ElementTree as ET
 
+def allocate_money(deal, cards):
+    """
+    Распределяет деньги по картам для новой сделки
+    deal - объект сделки, содержащий информацию о цене и выбранной карте
+    cards - список объектов карт, содержащих информацию об их балансах, лимитах и оборотах за текущие сутки
+    """
+    card_with_min_balance = None
+    min_balance = float('inf')
+    exhausted_cards = []
+    today = datetime.now().date()
+
+    for card in cards:
+        if card.turnover_date.date() != today:  # проверяем, что оборот на карте за текущие сутки еще не был учтен, если да, то обнуляем его
+            card.turnover = 0
+            card.turnover_date = today
+        if card.limit > deal.price and card.balance < min_balance:
+            card_with_min_balance = card
+            min_balance = card.balance
+        else:
+            exhausted_cards.append(card)
+
+    if not card_with_min_balance:
+        if exhausted_cards:
+            card_with_min_balance = exhausted_cards[0]
+
+    if card_with_min_balance:
+        card_with_min_balance.balance -= deal.price
+        card_with_min_balance.turnover += deal.price
+        return card_with_min_balance.id
+
+    return None  # если нет карт, которые можно использовать для оплаты сделки
+
+
 def cryptoexchange_parse_rate(from_name: str, to_name: str, r: int = 2, cache_expires: int = 10) -> float:
     """ Получает файл с курсами с сайта cryptoexchange.cc
         и извлекает ставки из выбранной валютной пары.

@@ -270,7 +270,7 @@ locales['ru'] = {
     'inline_exchange_decline_agreement': '❌ Отказываюсь',
     'inline_exchange_accept': '✅ Да',
     'inline_exchange_decline': '❌ Нет',
-    'inline_admin_params_exchange': '⚙️ Параметры обмена',
+    'inline_admin_params_exchange': '⚙️ Настройки бота',
     'inline_admin_orders': '📖 Открытые сделки ({0})',
     'inline_admin_problems_with_orders': '🚫 Проблемы со сделками ({0})',
     'inline_admin_support_requests': '📩 Обращения в поддержку ({0})',
@@ -392,4 +392,4 @@ def translate(code: str, key: str) -> str:
         :code: str код языка
         :key: str языковая строка
     """
-    return locales.get(code, config['DEFAULT']['language']).get(key, 'default')
+    return locales.get(code, config['DEFAULT']['language']).get(key, 'StringNotFound')

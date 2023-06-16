@@ -27,7 +27,7 @@ if __name__ == '__main__':
 
         # Запускаем
         bot.infinity_polling(
-            # restart_on_change=True, # !!!DEBUG!!!
+            restart_on_change=config.getboolean('DEFAULT', 'debug')
         )
-    except Exception:
+    except Exception as e:
         print(e)

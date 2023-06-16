@@ -5,3 +5,5 @@ __pycache__/
 *.log
 media/
 data/files/
+config.ini
+/test.py
