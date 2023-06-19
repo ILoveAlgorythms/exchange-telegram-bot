@@ -2,8 +2,9 @@ from datetime import datetime
 import requests
 import os
 import xml.etree.ElementTree as ET
+from pathlib import Path
 
-def cryptoexchange_parse_rate(from_name: str, to_name: str, r: int = 3, cache_expires: int = 10, is_update: bool = False) -> float:
+def cryptoexchange_parse_rate(from_name: str, to_name: str, r: int = 3, is_update: bool = False) -> float:
     """ Получает файл с курсами с сайта cryptoexchange.cc
         и извлекает ставки из выбранной валютной пары.
 
@@ -21,10 +22,7 @@ def cryptoexchange_parse_rate(from_name: str, to_name: str, r: int = 3, cache_ex
     file_name = 'cryptoexchange-rates-export.xml'
     file_path = ROOT_DIR + '/data/files/'+ file_name
     rates_xml_file_link = 'https://cryptoxchange.cc/rates-export.xml?utm_source=bestchange'
-
-    # string_cache = 'cryptoexchange_rates'
-    # cache_expires = cache_expires * 60
-    # rates_is_update = cache.get(string_cache)
+    file_exist = Path(file_path).is_file()
 
     pair_rate = {
         'from': from_name,
@@ -33,26 +31,11 @@ def cryptoexchange_parse_rate(from_name: str, to_name: str, r: int = 3, cache_ex
         'out': 0,
     }
 
-    if is_update:
+    if is_update or file_exist is False:
         try:
             headers = {
-                # "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-                # "Accept-Encoding": "gzip, deflate, br",
-                # "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
-                # "Cookie": "__js_p_=121,1800,0,0,0;__jhash_=500;__jua_=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36;__hash_=98c55a4c1f403c17275f2aaf344ceeba;__lhash_=4469c2dce5189986e8dde7306008645b",
                 "Referer": "https://cryptoxchange.cc/partners",
-                # "Sec-Ch-Ua": '"Google Chrome";v="113", "Chromium";v="113", "Not-A.Brand";v="24"',
-                # "Sec-Ch-Ua-Mobile": "?0",
-                # "Sec-Ch-Ua-Platform": '"macOS"',
-                # "Sec-Fetch-Dest": "empty",
-                # "Sec-Fetch-Mode": "navigate",
-                # "Sec-Fetch-Site": "same-origin",
-                # "Upgrade-Insecure-Requests": "1",
-                # "__lhash_": "4469c2dce5189986e8dde7306008645b",
-                # "__hash_": "98c55a4c1f403c17275f2aaf344ceeba",
-                # "__jhash_": "500",
                 "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36",
-                # "__js_p_": "121,1800,0,0,0",
             }
             cookies = {
                 "cryptoxchange_session": "eyJpdiI6IndEYUduVS91cWdKVXRmM2QwVkJrSFE9PSIsInZhbHVlIjoiRE9GbEFTZS9kMmROSUNMMmx0V2htaU9FalZuV3hOSk9keEc4R0RTdjk1aTlhd2xCOWVPNFFyeW9majUvRXVnQjFUSU10VXZ6L0pDS0pGSFRIbFlDYU92em5HRFZJQTVyQ1lEV1Q5ZndSK1AwTlVnNCsyaUlpWmlDUmlyejArN04iLCJtYWMiOiJjZGFkZjU1MjRlMTZhZTBiMzk0MmEwZDk5YzYwYWRlNDhlMDQ5OGRlZmJjOTA1MDBkZTY2NzNmMWIyM2FkMTIxIiwidGFnIjoiIn0=",
@@ -62,13 +45,8 @@ def cryptoexchange_parse_rate(from_name: str, to_name: str, r: int = 3, cache_ex
                 "__jhash_": "431",
                 "__js_p_": "194,1800,0,0,0",
             }
-            # s = requests.Session()
-            # s.cookies.set(**cookies)
             rates = requests.get(rates_xml_file_link, headers=headers)
             xml = rates.text
-
-            # cache.set(string_cache, file_name)
-            # cache.expire(string_cache, cache_expires)
 
             # > 500 - это просто условности
             # бывает что парсер отдаёт пустой файл

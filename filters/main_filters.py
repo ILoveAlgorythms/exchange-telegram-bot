@@ -1,24 +1,28 @@
-from telebot.custom_filters import SimpleCustomFilter
+from telebot.custom_filters import SimpleCustomFilter, AdvancedCustomFilter
 from telebot.types import Message, CallbackQuery
 from bot_locale.translate import translate
 from keyboards.inline.menu import MenuKeyboard
 from loader import bot, db
 
-class IsAdmin(SimpleCustomFilter):
-    """Проверяет является ли пользователь администратором"""
-    key='is_admin'
+class Role(AdvancedCustomFilter):
+    """ Проверяет есть ли у пользователя
+        необходимые права доступа в разделы
+    """
+    key='role'
     @staticmethod
-    def check(message: Message):
+    def check(message: Message, roles):
         telegram_id = message.from_user.id
         user = db.get_user(message.from_user.id)
+        lang = user['language_code']
 
-        if user and user['is_admin']:
-            return True
+        if user['role'] not in roles:
+            if type(message) == CallbackQuery:
+                bot.answer_callback_query(message.id, translate(lang, 'access_denied'), show_alert=True)
 
-        if type(message) == Message:
-            bot.send_message(message.from_user.id, "Access denied")
+            if type(message) == Message:
+                bot.send_message(message.chat.id, translate(lang, 'access_denied'))
 
-        return False
+        return user['role'] in roles
 
 class IsAmount(SimpleCustomFilter):
     """ Проверяет является ли введённый текст

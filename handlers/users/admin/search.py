@@ -9,7 +9,7 @@ callback_data_admin_search_deal = 'admin.search_deals'
 callback_data_admin_search = 'admin.search_deal_' # by_id
 callback_data_admin_work_open_deal = 'admin.open_work_deal_'
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data == callback_data_admin_search_deal, is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data == callback_data_admin_search_deal, role=['manager', 'admin'])
 def admin_search(call):
     """ Открывает параметры
         поиска ордеров (по айди ордера или показать все ордера юзера)
@@ -25,7 +25,7 @@ def admin_search(call):
         reply_markup=AdminKeyboard.search(user)
     )
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_search), is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_search), role=['manager', 'admin'])
 def admin_search(call):
     """ Задаёт состояние поиску
         (поиск сделки по id или сделок пользователя по id/username)
@@ -54,7 +54,7 @@ def admin_search(call):
     )
 
 
-@bot.message_handler(is_chat=False, state=AdminDealSearch.by_id, is_admin=True)
+@bot.message_handler(is_chat=False, state=AdminDealSearch.by_id, role=['manager', 'admin'])
 def search_deal_by_id(message):
     """ Поиск сделки по ID
         Вернёт сделку, если есть совпадение
@@ -87,7 +87,7 @@ def search_deal_by_id(message):
     )
 
 
-@bot.message_handler(is_chat=False, state=AdminDealSearch.uid_or_uname, is_admin=True)
+@bot.message_handler(is_chat=False, state=AdminDealSearch.uid_or_uname, role=['manager', 'admin'])
 def search_deal_by_uid_or_uname(message):
     """ Поиск сделок пользователя
         Вернёт список сделок, если есть совпадение

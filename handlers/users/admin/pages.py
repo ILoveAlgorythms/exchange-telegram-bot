@@ -14,7 +14,7 @@ callback_data_admin_edit_page = 'admin.pages.edit_'
 callback_data_admin_add_document_page = 'admin.pages.add_document_page_'
 callback_data_admin_delete_document_page = 'admin.pages.delete_document_page_'
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data == callback_data_admin_pages, is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data == callback_data_admin_pages, role=['admin'])
 def admin_pages_list(call):
     """ Отображает список страниц
     """
@@ -28,7 +28,7 @@ def admin_pages_list(call):
         reply_markup=AdminKeyboard.pages(user, pages)
     )
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_preview_page), is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_preview_page), role=['admin'])
 def admin_preview_page(call):
     """ Отображает содержимое и кнопки управления страницей
     """
@@ -56,7 +56,7 @@ def admin_preview_page(call):
     # Для кнопки "Назад" из редактирования страницы
     bot.delete_state(call.from_user.id)
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_edit_page), is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_edit_page), role=['admin'])
 def admin_edit_page(call):
     """ Редактирование страницы
     """
@@ -81,7 +81,7 @@ def admin_edit_page(call):
         reply_markup=MenuKeyboard.back_to(user, key_string='inline_back_to', data=callback_data_admin_preview_page+str(page['id']))
     )
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_delete_document_page), is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_delete_document_page), role=['admin'])
 def admin_delete_document_page(call):
     """ Удаление документа у страницы
     """
@@ -98,7 +98,7 @@ def admin_delete_document_page(call):
         reply_markup=MenuKeyboard.back_to(user, key_string='inline_back_to', data=callback_data_admin_preview_page+str(page['id']))
     )
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_add_document_page), is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_add_document_page), role=['admin'])
 def admin_add_document_page(call):
     """ Добавление документа к странице
     """
@@ -188,13 +188,13 @@ def not_supported_message(message):
     bot.delete_state(message.from_user.id)
 
 
-@bot.message_handler(is_chat=False, state=EditPage.A1, is_admin=True)
+@bot.message_handler(is_chat=False, state=EditPage.A1, role=['admin'])
 def edit_page_text(message):
     user = db.get_user(message.from_user.id)
 
     with bot.retrieve_data(message.from_user.id) as data:
         # Обрезаем лишние символы
-        new_page_text = escape_markdown(message.text[0:4000])
+        new_page_text = message.text[0:4000]
 
         # Обновляем страницу
         db.update_page(page_id=data['page_id'], args={'page_content': new_page_text})

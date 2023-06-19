@@ -25,6 +25,11 @@ class EditCountry(StatesGroup):
     """
     A1 = State()
 
+class PaymentAccount(StatesGroup):
+    """ Создание платёжного счтеа
+    """
+    create = State()
+
 class EditBank(StatesGroup):
     """ Редактирование банка
     """
@@ -43,6 +48,11 @@ class CreateBank(StatesGroup):
     A1 = State()
     A2 = State()
     A3 = State()
+
+class EditLimit(StatesGroup):
+    """ Редактирование лимитов
+    """
+    A1 = State()
 
 class EditPage(StatesGroup):
     """ Редактирование страницы
@@ -98,6 +108,7 @@ class AdminDeal(StatesGroup):
     requisites = State()
     message = State()
     chat = State()
+    profit = State()
 
 class AdminTicket(StatesGroup):
     """ Изменение тикета в админке

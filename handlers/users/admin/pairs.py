@@ -27,13 +27,14 @@ params = {
     'to_type': 'inline_admin_pair_edit_from_type',
     'to_requisites_comment': 'inline_admin_pair_edit_to_requisites_comment',
     'spread': 'inline_admin_pair_edit_spread',
-    'price_handler': 'inline_admin_pair_edit_price_handler',
+    'auto_requisites': 'inline_admin_pair_edit_price_handler',
+    'handler_inverted': 'inline_admin_pair_edit_handler_inverted',
     'from_handler_name': 'inline_admin_pair_edit_from_handler_name',
     'to_handler_name': 'inline_admin_pair_edit_to_handler_name',
     'handler_inverted': 'inline_admin_pair_edit_handler_inverted',
 }
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data == callback_data_admin_pairs, is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data == callback_data_admin_pairs, role=['admin'])
 def admin_banks_list(call):
     """ Отображает список валютных пар
     """
@@ -56,7 +57,7 @@ def admin_banks_list(call):
     )
 
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_delete_pair), is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_delete_pair), role=['admin'])
 def admin_delete_pair(call):
     """ Предупреждение об удалении пары
     """
@@ -83,7 +84,7 @@ def admin_delete_pair(call):
     )
 
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_pair_accept_delete), is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_pair_accept_delete), role=['admin'])
 def admin_delete_pair_accept(call):
     """ Удаление пары
     """
@@ -115,7 +116,7 @@ def admin_delete_pair_accept(call):
     )
 
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_view_pair), is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_view_pair), role=['admin'])
 def admin_preview_pair(call):
     """ Отображает содержимое и кнопки управления валютной парой
     """
@@ -139,7 +140,7 @@ def admin_preview_pair(call):
     # Для кнопки "Назад" из редактирования страны
     bot.delete_state(call.from_user.id)
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_edit_pair), is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_edit_pair), role=['admin'])
 def admin_edit_pair(call):
     """ Редактирование пары
     """
@@ -159,6 +160,30 @@ def admin_edit_pair(call):
         pair['is_active'] = status
 
         db.update_pair(pair_id=pair['id'], args={'is_active': status})
+
+        edit_pair_text = translate(
+            user['language_code'],
+            'admin_data_pair_view'
+        ).format(**pair)
+
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            text=edit_pair_text,
+            reply_markup=AdminKeyboard.edit_pair(user, pair, params)
+        )
+        return
+
+    if parameter == 'auto_requisites':
+        bot.answer_callback_query(
+            call.id,
+            'Success!'
+        )
+
+        auto_requisites = 1 if pair['auto_requisites'] == 0 else 0
+        pair['auto_requisites'] = auto_requisites
+
+        db.update_pair(pair_id=pair['id'], args={'auto_requisites': auto_requisites})
 
         edit_pair_text = translate(
             user['language_code'],
@@ -219,7 +244,7 @@ def admin_edit_pair(call):
             text=country_text
         )
 
-@bot.message_handler(is_chat=False, state=EditPair.A1, is_admin=True)
+@bot.message_handler(is_chat=False, state=EditPair.A1, role=['admin'])
 def edit_pair_param(message):
     user = db.get_user(message.from_user.id)
 
@@ -279,7 +304,7 @@ def edit_pair_param(message):
 ###         ###############         ###############
 ###         ###         ###         ###         ###
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data == callback_data_admin_create_pair, is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data == callback_data_admin_create_pair, role=['admin'])
 def admin_create_pair(call):
     """ Создание пары
     """
@@ -304,7 +329,7 @@ def admin_create_pair(call):
         )
 
 
-@bot.message_handler(is_chat=False, state=CreatePair.A1, is_admin=True)
+@bot.message_handler(is_chat=False, state=CreatePair.A1, role=['admin'])
 def create_pair_a1(message):
     """ Сохранение отдаваемого актива
         и ввод получаемого
@@ -320,7 +345,7 @@ def create_pair_a1(message):
 
     bot.set_state(user_id, CreatePair.A2)
 
-@bot.message_handler(is_chat=False, state=CreatePair.A2, is_admin=True)
+@bot.message_handler(is_chat=False, state=CreatePair.A2, role=['admin'])
 def create_pair_a2(message):
     """ Сохранение получаемого актива
         и ввод  мин/макс суммы отдаваемого актива
@@ -336,7 +361,7 @@ def create_pair_a2(message):
 
     bot.set_state(user_id, CreatePair.A3)
 
-@bot.message_handler(is_chat=False, state=CreatePair.A3, is_admin=True)
+@bot.message_handler(is_chat=False, state=CreatePair.A3, role=['admin'])
 def create_pair_a3(message):
     """ Сохранение мин/макс суммы
         и ввод кода страны для отдаваемой пары
@@ -363,7 +388,7 @@ def create_pair_a3(message):
 
     bot.set_state(user_id, CreatePair.A4)
 
-@bot.message_handler(is_chat=False, state=CreatePair.A4, is_admin=True)
+@bot.message_handler(is_chat=False, state=CreatePair.A4, role=['admin'])
 def create_pair_a4(message):
     """ Сохранение кода страны для отдаваемой пары
         и ввод кода страны для получаемой пары
@@ -379,7 +404,7 @@ def create_pair_a4(message):
 
     bot.set_state(user_id, CreatePair.A5)
 
-@bot.message_handler(is_chat=False, state=CreatePair.A5, is_admin=True)
+@bot.message_handler(is_chat=False, state=CreatePair.A5, role=['admin'])
 def create_pair_a5(message):
     """ Сохранение кода страны для получаемой пары
         и ввод спреда
@@ -395,7 +420,7 @@ def create_pair_a5(message):
 
     bot.set_state(user_id, CreatePair.A6)
 
-@bot.message_handler(is_chat=False, state=CreatePair.A6, is_admin=True)
+@bot.message_handler(is_chat=False, state=CreatePair.A6, role=['admin'])
 def create_pair_a5(message):
     """ Сохранение спреда
         и создание пары
@@ -439,15 +464,16 @@ def create_pair_a5(message):
 
     bot.set_state(user_id, CreatePair.A7)
 
-@bot.callback_query_handler(is_chat=False, state=CreatePair.A7, func=lambda call: call.data.startswith(callback_data_admin_create_pair_accept), is_admin=True)
+@bot.callback_query_handler(is_chat=False, state=CreatePair.A7, func=lambda call: call.data.startswith(callback_data_admin_create_pair_accept), role=['admin'])
 def create_pair_a6(call):
     """ Сохранение пары
     """
     user_id = call.from_user.id
     with bot.retrieve_data(user_id) as data:
+        user = json.loads(data['user'])
         try:
             pair_id = db.create_pair(
-                0,
+                user['id'],
                 data['from_name'],
                 data['from_min_amount'],
                 data['from_max_amount'],
@@ -460,7 +486,6 @@ def create_pair_a6(call):
             print(e)
             return
 
-        user = json.loads(data['user'])
         msg = translate(
             user['language_code'],
             'create_pair_success'
@@ -480,4 +505,4 @@ def create_pair_a6(call):
 
         )
 
-    # bot.delete_state(user_id)
+    bot.delete_state(user_id)

@@ -14,7 +14,7 @@ callback_data_admin_ticket_open_chat = 'admin.ticket_open_chat_'
 callback_data_admin_ticket_open_chat_send = 'admin.ticket_chat_send'
 
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_work_open_ticket), is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_work_open_ticket), role=['manager', 'admin'])
 def admin_open_work_order(call):
     """ Открывает тикет с панелью управления
     """
@@ -53,7 +53,7 @@ def admin_open_work_order(call):
         reply_markup=AdminKeyboard.ticket(user, ticket)
     )
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_change_ticket_status), is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_change_ticket_status), role=['manager', 'admin'])
 def admin_ticket_change_status(call):
     """ Изменяет статус тикета
     """

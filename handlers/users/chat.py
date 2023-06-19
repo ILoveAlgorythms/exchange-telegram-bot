@@ -5,7 +5,7 @@ from keyboards.inline.menu import ChatKeyboard
 
 callback_data_switc_notifications = 'admin.chat.notifications_switch_'
 
-@bot.message_handler(is_chat=True, commands=['start'], is_admin=True)
+@bot.message_handler(is_chat=True, commands=['start'], role=['admin'])
 def chat_home(message):
     """ Chat /start
         Отображает меню подключения уведомлений
@@ -19,7 +19,7 @@ def chat_home(message):
 
     bot.send_message(message.chat.id, translate(user['language_code'], 'chat_home_notifications'), reply_markup=ChatKeyboard.home(user, message.chat.id, config))
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith(callback_data_switc_notifications), is_chat=True, is_admin=True)
+@bot.callback_query_handler(func=lambda call: call.data.startswith(callback_data_switc_notifications), is_chat=True, role=['admin'])
 def chat_notifications_switcher(call):
     """ Изменение настроек уведомлений
         в группе
@@ -42,9 +42,9 @@ def chat_notifications_switcher(call):
                     translate(user['language_code'], 'chat_swith_disabled_notify_deals')
                 )
                 # Выходим из группы
-                # bot.leave_chat(
-                #     call.message.chat.id
-                # )
+                bot.leave_chat(
+                    config['notifications_deal_chat_id']
+                )
             except Exception as e:
                 pass
 
@@ -73,9 +73,9 @@ def chat_notifications_switcher(call):
                     translate(user['language_code'], 'chat_swith_disabled_notify_support')
                 )
                 # Выходим из группы
-                # bot.leave_chat(
-                #     call.message.chat.id
-                # )
+                bot.leave_chat(
+                    config['notifications_support_chat_id']
+                )
             except Exception as e:
                 pass
 

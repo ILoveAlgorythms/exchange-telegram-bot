@@ -27,7 +27,7 @@ def start_handler(message):
     text = translate(user['language_code'], 'start_text')
     kb = MenuKeyboard.home(user)
 
-    if user['is_admin']:
+    if user['role'] in ['manager', 'admin']:
         args = extract_arguments(message.text)
 
         if args.startswith("order"):
@@ -180,11 +180,22 @@ def bot_main_callback_funcions(call):
     if calldata == 'my_exchanges':
         # Выводит информацию о сделках пользователя
         #
-        user_deals = db.get_deals(user['id'])
+        user_deals = db.get_deals(user['id'], end_limit=5)
+        lang = user['language_code']
+
+        deal_text = translate(lang, 'chapter_my_exchanges')
+        deal_status = translate(lang, 'dict_deal_status')
+        stroke = "\n\n"
+
+        for deal in user_deals:
+            stroke += f"{deal_status[deal['status']]} {deal['created_at']} /TEST\n{deal['from_amount']} {deal['from_name']} ➡️ {deal['to_amount']} {deal['to_name']}\n\n"
+
+        deal_text += stroke
+
         bot.edit_message_text(
             chat_id=call.message.chat.id,
             message_id=call.message.message_id,
-            text=translate(user['language_code'], 'chapter_my_exchanges'),
+            text=deal_text,
             reply_markup=MenuKeyboard.deals(user, user_deals, callback_data_select_user_deal)
         )
 

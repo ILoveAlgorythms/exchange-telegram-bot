@@ -11,7 +11,7 @@ callback_data_admin_open_tickets = 'admin.support_tickets'
 callback_data_admin_work_open_ticket = 'admin.open_work_ticket_'
 callback_data_admin_change_tecnical_break = 'admin.params_change_techinal_break'
 
-@bot.message_handler(is_chat=False, commands=['admin'], is_admin=True)
+@bot.message_handler(is_chat=False, commands=['admin'], role=['manager', 'admin'])
 def admin_home(message):
     """ BOT /admin
         Отображает панель администратора
@@ -57,7 +57,7 @@ def admin_home(message):
         )
     )
 
-@bot.message_handler(is_chat=False, commands=['set_admin'], is_admin=True)
+@bot.message_handler(is_chat=False, commands=['set_admin'], role=['manager', 'admin'])
 def set_admin(message):
     """ BOT /set_admin
         Даёт/забирает админку у пользователя по id/username
@@ -107,7 +107,7 @@ def set_admin(message):
         text=msg
     )
 
-@bot.message_handler(is_chat=False, commands=['ban'], is_admin=True)
+@bot.message_handler(is_chat=False, commands=['ban'], role=['manager', 'admin'])
 def admin_home(message):
     """ BOT /ban
         Бан/Разбан пользователя по id/username
@@ -151,7 +151,7 @@ def admin_home(message):
     )
 
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data == callback_data_admin_open_tickets, is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data == callback_data_admin_open_tickets, role=['manager', 'admin'])
 def admin_open_tickets(call):
     """ Список открытых тикетов
     """
@@ -172,7 +172,7 @@ def admin_open_tickets(call):
     )
 
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data == callback_data_admin_change_tecnical_break, is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data == callback_data_admin_change_tecnical_break, role=['manager', 'admin'])
 def admin_change_technical_break(call):
     """ Включение/отключение обменов
     """
@@ -197,20 +197,20 @@ def admin_change_technical_break(call):
         )
     )
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data == callback_data_admin_params, is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data == callback_data_admin_params, role=['admin'])
 def admin_back_to_home(call):
-    """ Параметры обмена
+    """ Настройки бота
     """
     user = db.get_user(call.from_user.id)
 
     bot.edit_message_text(
         chat_id=call.message.chat.id,
         message_id=call.message.message_id,
-        text=f'Params exchange',
+        text=f'⚙️ Настройки системы',
         reply_markup=AdminKeyboard.params_exchange(user)
     )
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_back_to_home), is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_back_to_home), role=['manager', 'admin'])
 def admin_back_to_home(call):
     """ Открывает панель администратора
         через callback кнопки

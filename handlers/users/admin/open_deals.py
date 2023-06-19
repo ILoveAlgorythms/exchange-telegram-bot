@@ -1,7 +1,7 @@
 from loader import bot, db
 from states.states import AdminDeal
 from bot_locale.translate import translate
-from utils.message_templates import get_admin_deal_text
+from utils.message_templates import get_admin_deal_text, get_requisites_text
 from keyboards.inline.menu import AdminKeyboard, MenuKeyboard
 from telebot.formatting import escape_markdown
 import json
@@ -12,14 +12,14 @@ callback_data_admin_open_disput_deals = 'admin.open_disput_deals'
 callback_data_admin_work_open_deal = 'admin.open_work_deal_'
 callback_data_admin_change_status_deal = 'admin.deal_change_status_'
 callback_data_send_requisites = 'admin.deal_send_requisites'
+callback_data_deal_set_profit = 'admin.deal_set_profit_'
 callback_data_deal_chat = 'admin.deal_open_chat_'
 callback_data_deal_send_message = 'admin.deal_send_message_chat'
 callback_data_open_user_chat = 'bot.deal_open_user_chat_'
-# is_lock_string = cache_waiting_create_new_deal.format(user['id'])
-# is_lock = cache.get(is_lock_string)
+cache_waiting_create_new_deal = '{0}_deal_locked_time'
 
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_work_open_deal), is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_work_open_deal), role=['manager', 'admin'])
 def admin_open_work_order(call):
     """ Открывает сделку с панелью управления
     """
@@ -43,7 +43,7 @@ def admin_open_work_order(call):
         reply_markup=AdminKeyboard.deal(user, deal)
     )
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_change_status_deal), is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_change_status_deal), role=['manager', 'admin'])
 def admin_open_work_order(call):
     """ Изменяет статус сделки
     """
@@ -54,6 +54,7 @@ def admin_open_work_order(call):
     user = db.get_user(call.from_user.id)
     deal = db.get_deal(deal_id)
     user_deal =  db.get_user(deal['user_id'], name_id="id")
+    lang_user_deal = user_deal['language_code']
 
     if (
         deal['manager_id'] != 0 and
@@ -179,18 +180,25 @@ def admin_open_work_order(call):
                 "to_bank_name": deal['to_bank_name'],
                 "to_amount": deal['to_amount'],
             })
+
+            string_view_deal = translate(lang_user_deal, 'inline_deal_view_deal')
+            string_open_dusput_deal = translate(lang_user_deal, 'inline_deal_open_dispute')
+            string_open_main_menu = translate(lang_user_deal, 'inline_back_to_main_menu')
+            string_crate_new_exchange = translate(lang_user_deal, 'inline_create_new_exchange')
+
             bot.send_message(
                 user_deal['telegram_id'],
                 text=deal_completed_text,
-                reply_markup=MenuKeyboard.accept_or_decline(
-                    user,
-                    cl_accept='bot.my_exchanges.id_'+str(deal['id']),
-                    key_string_accept='inline_deal_view_deal',
-                    cl_decline='bot.deal_open_dispute_'+str(deal['id']),
-                    key_string_decline='inline_deal_open_dispute',
-                )
+                reply_markup=MenuKeyboard.smart({
+                    string_view_deal: {'callback_data': 'bot.my_exchanges.id_'+str(deal['id'])},
+                    string_open_dusput_deal: {'callback_data': 'bot.deal_open_dispute_'+str(deal['id'])},
+                    string_crate_new_exchange: {'callback_data': 'bot.set.new_exchange'},
+                    string_open_main_menu: {'callback_data': 'bot.back_to_main_menu'},
+                })
             )
             db.update_deal(deal['id'], {'status': 'completed'})
+            # Снимаем блокировку
+            cache.delete(cache_waiting_create_new_deal.format(deal['user_id']))
         except Exception as e:
             print(e)
 
@@ -201,7 +209,7 @@ def admin_open_work_order(call):
         reply_markup=AdminKeyboard.deal(user, deal)
     )
 
-@bot.message_handler(is_chat=False, state=AdminDeal.requisites, is_admin=True)
+@bot.message_handler(is_chat=False, state=AdminDeal.requisites, role=['manager', 'admin'])
 def send_requisites(message):
     """ Убеждаемся, что всё верно
     """
@@ -225,7 +233,7 @@ def send_requisites(message):
             )
         )
 
-@bot.callback_query_handler(state=AdminDeal.requisites, is_chat=False, func=lambda call: call.data == callback_data_send_requisites, is_admin=True)
+@bot.callback_query_handler(state=AdminDeal.requisites, is_chat=False, func=lambda call: call.data == callback_data_send_requisites, role=['manager', 'admin'])
 def send_requisites(call):
     """ Отправляем реквизиты
     """
@@ -245,39 +253,26 @@ def send_requisites(call):
             )
         )
         try:
-            requisites_text = translate(
-                user_deal['language_code'],
-                'user_deal_send_requisites_message'
-            ).format(**{
-                "id": deal['id'],
-                "from_name": deal['from_name'],
-                "from_amount": deal['from_amount'],
-                "from_bank_name": deal['from_bank_name'],
-                "to_name": deal['to_name'],
-                "to_amount": deal['to_amount'],
-                "to_bank_name": deal['to_bank_name'],
-                "requisites": escape_markdown(
-                    json.loads(data['requisites'])
-                ),
-            })
+            requisites = escape_markdown(
+                json.loads(data['requisites'])
+            )
+            requisites_text, kb = get_requisites_text(user, deal, requisites)
+
             bot.send_message(
                 user_deal['telegram_id'],
                 requisites_text,
-                reply_markup=MenuKeyboard.accept_or_decline(
-                    user_deal,
-                    cl_accept='bot.deal_change_status_accept_'+str(deal['id']),
-                    key_string_accept='inline_deal_user_deal_paid_',
-                    cl_decline='bot.back_to_main_menu',
-                    key_string_decline='inline_back_to_main_menu',
-                )
+                reply_markup=kb
             )
-            db.update_deal(deal['id'], {'status': 'process'})
+            db.update_deal(
+                deal['id'],
+                {'status': 'process', 'from_requisites': requisites}
+            )
         except Exception as e:
             print(e)
 
     bot.delete_state(call.from_user.id)
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data == callback_data_admin_open_deals, is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data == callback_data_admin_open_deals, role=['manager', 'admin'])
 def admin_open_orders(call):
     """ Открывает список сделок (новые, в работе, споры)
     """
@@ -295,7 +290,7 @@ def admin_open_orders(call):
         reply_markup=AdminKeyboard.deals(user, deals, callback_data=callback_data_admin_work_open_deal)
     )
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data == callback_data_admin_open_disput_deals, is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data == callback_data_admin_open_disput_deals, role=['manager', 'admin'])
 def admin_open_orders(call):
     """ Открывает список с проблемными сделками
     """
@@ -491,3 +486,95 @@ def accept_send_message(call):
                 bot.send_document(user_deal_tid, data['attach']['data'], caption=msg_attach, reply_markup=kb)
         except Exception as e:
             print(e)
+
+
+
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_deal_set_profit), role=['manager', 'admin'])
+def admin_set_profit(call):
+    """ Задаём профит (прибыль от сделки)
+    """
+    user = db.get_user(call.from_user.id)
+    deal_id = call.data.replace(callback_data_deal_set_profit, "")
+    deal = db.get_deal(deal_id)
+
+    bot.set_state(call.from_user.id, AdminDeal.profit)
+
+    with bot.retrieve_data(call.from_user.id) as data:
+        data['deal'] = json.dumps(
+            deal,
+            indent=4,
+            sort_keys=True,
+            default=str
+        )
+        data['user'] = json.dumps(
+            user,
+            indent=4,
+            sort_keys=True,
+            default=str
+        )
+        profit_text = translate(
+            user['language_code'],
+            'admin_deal_set_profit'
+        ).format(
+            deal['from_name'],
+            deal['to_name'],
+            deal['profit_asset']
+        )
+
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            text=profit_text,
+            reply_markup=MenuKeyboard.back_to(
+                user,
+                data=(callback_data_admin_work_open_deal+str(deal['id'])),
+                key_string='inline_back_to'
+            )
+        )
+
+
+
+@bot.message_handler(is_chat=False, state=AdminDeal.profit, role=['manager', 'admin'])
+def save_profit_or_decline(message):
+    """ Сохраняем профит
+    """
+    with bot.retrieve_data(message.from_user.id) as data:
+        user = json.loads(data['user'])
+        deal = json.loads(data['deal'])
+        profit = 0
+        profit_asset = deal['profit_asset']
+        profit_input_asset = None
+        assets = [deal['from_name'], deal['to_name'], deal['profit_asset']]
+
+        kb = MenuKeyboard.back_to(
+            user,
+            data=(callback_data_admin_work_open_deal+str(deal['id'])),
+            key_string='inline_back_to'
+        )
+
+        try:
+            profit_info = message.text.split(" ")
+            profit_input_asset = profit_info[1].upper()
+            profit = float(profit_info[0])
+        except Exception as e:
+            pass
+
+        if profit <= 0 or profit > deal['from_amount'] or profit_input_asset not in assets:
+            bot.send_message(
+                chat_id=message.chat.id,
+                text=translate(user['language_code'], 'error_data_not_valid'),
+                reply_markup=kb
+            )
+            return
+
+        db.update_deal(
+            deal['id'],
+            {'profit': profit, 'profit_asset': profit_input_asset}
+        )
+        bot.send_message(
+            chat_id=message.chat.id,
+            text=translate(user['language_code'], 'admin_deal_profit_fixed'),
+            reply_markup=kb
+        )
+
+    bot.delete_state(message.from_user.id)

@@ -282,6 +282,28 @@ class Database():
                     cursor.execute(select_deals_query)
                     return cursor.fetchall()
 
+    def get_view(self, view_name):
+        """ Получает предсавление
+
+            :view_name: название представления
+        """
+        with connect(host=self.host, user=self.user, password=self.password, database=self.db) as connection:
+            with connection.cursor(dictionary=True, buffered=True) as cursor:
+                    select_view_query = f"""SELECT * FROM {view_name}"""
+                    cursor.execute(select_view_query)
+                    return cursor.fetchall()
+
+    def get_payment_accoumt(self, account_id):
+        """ Получает счёт по ID
+
+            :account_id:     int идентификатор счёта
+        """
+        with connect(host=self.host, user=self.user, password=self.password, database=self.db) as connection:
+            with connection.cursor(dictionary=True, buffered=True) as cursor:
+                    select_account_query = f"""SELECT * FROM payment_accounts WHERE id = '{account_id}'"""
+                    cursor.execute(select_account_query)
+                    return cursor.fetchone()
+
     def get_deal(self, deal_id):
         """ Получает сделку по ID
 
@@ -479,9 +501,42 @@ class Database():
              VALUES
                  ({user_id}, "{from_name}", {from_min_amount}, {from_max_amount}, "{from_country_code}", "{to_name}", "{to_country_code}", {spread}, "{datetime.now()}")
             """
-            print(insert_pair_query)
             with connection.cursor() as cursor:
                 cursor.execute(insert_pair_query)
+                connection.commit()
+                return cursor.lastrowid
+
+    def create_payment_account(self, user_id, bank_id, rows):
+        """ Создаёт платежные аккаунты для банков
+
+            :user_id:
+            :bank_id:
+            :row:
+        """
+        data = []
+        for row in rows: data.append(tuple(row.values()))
+
+        with connect(host=self.host, user=self.user, password=self.password, database=self.db) as connection:
+            insert_payment_account_query = f"""
+             INSERT INTO payment_accounts (
+                user_id,       bank_id,
+                account,       account_info,
+                account_limit, created_at)
+             VALUES (
+                {user_id},
+                {bank_id},
+                %s, %s, %s,
+                "{datetime.now()}")
+             ON DUPLICATE KEY UPDATE
+                account = VALUES(account),
+                user_id = VALUES(user_id),
+                bank_id = VALUES(bank_id);
+            """
+            with connection.cursor() as cursor:
+                # cursor.executemany(insert_payment_account_query, data)
+                for row in rows:
+                    cursor.execute(insert_payment_account_query, tuple(row.values()))
+
                 connection.commit()
                 return cursor.lastrowid
 
@@ -492,9 +547,19 @@ class Database():
         """
         with connect(host=self.host, user=self.user, password=self.password, database=self.db) as connection:
             insert_deal_query = f"""
-             INSERT INTO deals (user_id, from_bank_name, from_name, from_amount, to_name, to_amount, orig_to_amount, to_bank_name, requisites, exchange_rate, orig_exchange_rate, spread, profit, calculated_amount, status, created_at)
+             INSERT INTO deals
+                (user_id,           from_bank_name,
+                from_name,          from_amount,
+                from_bank_id,       from_payment_account_id,
+                to_name,            to_amount,
+                orig_to_amount,     to_bank_name,
+                requisites,         exchange_rate,
+                orig_exchange_rate, spread,
+                profit,             calculated_amount,
+                status,             created_at)
              VALUES
-                 ({deals['user_id']}, "{deals['from_bank_name']}", "{deals['from_name']}", {deals['from_amount']}, "{deals['to_name']}", "{deals['to_amount']}",  "{deals['orig_to_amount']}", "{deals['to_bank_name']}", "{deals['requisites']}", "{deals['exchange_rate']}", "{deals['orig_exchange_rate']}", "{deals['spread']}", "{deals['profit']}", "{deals['calculated_amount']}", "{deals['status']}", "{datetime.now()}")
+                 ({deals['user_id']},             "{deals['from_bank_name']}", "{deals['from_name']}",          {deals['from_amount']}, "{deals['from_bank_id']}", {deals['from_payment_account_id']}, "{deals['to_name']}",            "{deals['to_amount']}",  "{deals['orig_to_amount']}",     "{deals['to_bank_name']}", "{deals['requisites']}",         "{deals['exchange_rate']}", "{deals['orig_exchange_rate']}", "{deals['spread']}", "{deals.get('profit', 0)}",     "{deals['calculated_amount']}",
+                 "{deals['status']}",             "{datetime.now()}")
             """
             with connection.cursor() as cursor:
                 cursor.execute(insert_deal_query)

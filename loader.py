@@ -3,7 +3,6 @@ import redis
 import telebot
 import sys
 import os
-
 from utils.db.db_api import Database
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -34,7 +33,8 @@ bot = telebot.TeleBot(
     token=config['DEFAULT']['token'],
     state_storage=state_storage,
     parse_mode="Markdown",
-    disable_web_page_preview=True
+    disable_web_page_preview=True,
+    use_class_middlewares=True
 )
 
 me = bot.get_me()

@@ -15,7 +15,7 @@ callback_data_admin_create_country_accept = 'admin.params_country_create_accept'
 callback_data_admin_delete_country = 'admin.params_country_delete_'
 callback_data_admin_country_accept_delete = 'admin.params_country_accept_delete_'
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data == callback_data_admin_countries, is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data == callback_data_admin_countries, role=['admin'])
 def admin_countries_list(call):
     """ Отображает список стран
     """
@@ -36,7 +36,7 @@ def admin_countries_list(call):
     )
 
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_view_country), is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_view_country), role=['admin'])
 def admin_preview_country(call):
     """ Отображает содержимое и кнопки управления страны
     """
@@ -64,7 +64,7 @@ def admin_preview_country(call):
     # Для кнопки "Назад" из редактирования страны
     bot.delete_state(call.from_user.id)
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_edit_country), is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_edit_country), role=['admin'])
 def admin_edit_country(call):
     """ Редактирование страны
     """
@@ -100,7 +100,7 @@ def admin_edit_country(call):
     )
 
 
-@bot.message_handler(is_chat=False, state=EditCountry.A1, is_admin=True)
+@bot.message_handler(is_chat=False, state=EditCountry.A1, role=['admin'])
 def edit_country_param(message):
     user = db.get_user(message.from_user.id)
 
@@ -152,7 +152,7 @@ def edit_country_param(message):
 ###########################################################################
 
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_delete_country), is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_delete_country), role=['admin'])
 def admin_delete_country(call):
     """ Предупреждение об удалении страны
     """
@@ -179,7 +179,7 @@ def admin_delete_country(call):
     )
 
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_country_accept_delete), is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_country_accept_delete), role=['admin'])
 def admin_delete_country_accept(call):
     """ Удаление страны (категории)
     """
@@ -217,7 +217,7 @@ def admin_delete_country_accept(call):
 ###########################################################################
 ###########################################################################
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data == callback_data_admin_create_country, is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data == callback_data_admin_create_country, role=['admin'])
 def admin_create_country(call):
     """ Создание страны
     """
@@ -241,7 +241,7 @@ def admin_create_country(call):
         )
 
 
-@bot.message_handler(is_chat=False, state=CreateCountry.A1, is_admin=True)
+@bot.message_handler(is_chat=False, state=CreateCountry.A1, role=['admin'])
 def admin_create_country_a1(message):
 
     with bot.retrieve_data(message.from_user.id) as data:
@@ -258,7 +258,7 @@ def admin_create_country_a1(message):
     bot.set_state(message.from_user.id, CreateCountry.A2)
 
 
-@bot.message_handler(is_chat=False, state=CreateCountry.A2, is_admin=True)
+@bot.message_handler(is_chat=False, state=CreateCountry.A2, role=['admin'])
 def admin_create_country_a2(message):
 
     with bot.retrieve_data(message.from_user.id) as data:
@@ -279,7 +279,7 @@ def admin_create_country_a2(message):
     bot.set_state(message.from_user.id, CreateCountry.A3)
 
 
-@bot.callback_query_handler(is_chat=False, state=CreateCountry.A3, func=lambda call: call.data == callback_data_admin_create_country_accept, is_admin=True)
+@bot.callback_query_handler(is_chat=False, state=CreateCountry.A3, func=lambda call: call.data == callback_data_admin_create_country_accept, role=['admin'])
 def admin_create_country(call):
     """ Запись страны в базу данных
     """

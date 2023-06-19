@@ -1,8 +1,9 @@
-from loader import bot, db
-from states.states import EditBank, CreateBank
-from bot_locale.translate import translate
+from states.states import EditBank, CreateBank, PaymentAccount
 from keyboards.inline.menu import AdminKeyboard, MenuKeyboard
+from utils.misc.accounts import account_parse_from_string
 from telebot.formatting import escape_markdown
+from bot_locale.translate import translate
+from loader import bot, db
 import json
 
 callback_data_admin_params = 'admin.params'
@@ -11,11 +12,36 @@ callback_data_admin_view_bank = 'admin.params_bank_view_'
 callback_data_admin_edit_bank = 'admin.params_bank_edit_'
 callback_data_admin_create_bank = 'admin.params_bank_create'
 callback_data_admin_create_bank_accept = 'admin.params_bank_create_accept'
+callback_data_admin_add_bank_acсount = 'admin.params_bank_add_bank_account_'
+callback_data_admin_stats_bank_acсounts = 'admin.params_bank_stats_bank_accounts_'
 
 callback_data_admin_delete_bank = 'admin.params_bank_delete_'
 callback_data_admin_bank_accept_delete = 'admin.params_bank_accept_delete_'
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data == callback_data_admin_banks, is_admin=True)
+def get_text_payment_accounts(bank_id):
+    """ Выводит список счетов
+        привязанных к банку
+    """
+    accounts = db.get_view("accounts_information_all_days")
+    accounts_text = "\n"
+    table = []
+
+    if accounts is None:
+        accounts_text = "---"
+        return accounts_text
+
+    for acc in accounts:
+        if acc['bank_id'] != bank_id: continue
+
+        number = acc.get('account_number')
+        info = acc.get('account_info')
+        total_sum = acc.get('total_sum')
+
+        accounts_text += f"_{number} | {info} | {total_sum}_\n"
+
+    return accounts_text
+
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data == callback_data_admin_banks, role=['admin'])
 def admin_banks_list(call):
     """ Отображает список банков
     """
@@ -36,7 +62,7 @@ def admin_banks_list(call):
     )
 
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_view_bank), is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_view_bank), role=['admin'])
 def admin_preview_bank(call):
     """ Отображает содержимое и кнопки управления банком
     """
@@ -55,6 +81,8 @@ def admin_preview_bank(call):
         bank['country_code'],
         bank['slug'],
     )
+    edit_page_text += get_text_payment_accounts(bank['id'])
+
     bot.edit_message_text(
         chat_id=call.message.chat.id,
         message_id=call.message.message_id,
@@ -65,7 +93,7 @@ def admin_preview_bank(call):
     # Для кнопки "Назад" из редактирования страны
     bot.delete_state(call.from_user.id)
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_edit_bank), is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_edit_bank), role=['admin'])
 def admin_edit_bank(call):
     """ Редактирование банка
     """
@@ -104,7 +132,7 @@ def admin_edit_bank(call):
     )
 
 
-@bot.message_handler(is_chat=False, state=EditBank.A1, is_admin=True)
+@bot.message_handler(is_chat=False, state=EditBank.A1, role=['admin'])
 def edit_bank_param(message):
     user = db.get_user(message.from_user.id)
 
@@ -155,7 +183,102 @@ def edit_bank_param(message):
 # ###########################################################################
 
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_delete_bank), is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_add_bank_acсount), role=['admin'])
+def admin_add_payment_account(call):
+    """ Добавление новых карт
+    """
+    user = db.get_user(call.from_user.id)
+    bank_id = call.data.replace(callback_data_admin_add_bank_acсount ,"")
+    bank = db.get_bank(bank_id, name_id="id")
+
+    add_payment_accounts_text = translate(
+        user['language_code'],
+        'admin_data_bank_add_accounts'
+    ).format(**{'bank_name': bank['name']})
+
+    # print(db.create_payment_account(1, 1, account_parse_from_string(stri)))
+
+    bot.edit_message_text(
+        chat_id=call.message.chat.id,
+        message_id=call.message.message_id,
+        text=add_payment_accounts_text,
+        reply_markup=MenuKeyboard.back_to(
+            user,
+            data=callback_data_admin_view_bank+str(bank['id']),
+            key_string='inline_back_to',
+        )
+    )
+
+    bot.set_state(call.from_user.id, PaymentAccount.create)
+
+    with bot.retrieve_data(call.from_user.id) as data:
+        data['bank'] = json.dumps(
+            bank,
+            indent=4,
+            sort_keys=True,
+            default=str
+        )
+        data['user'] = json.dumps(
+            user,
+            indent=4,
+            sort_keys=True,
+            default=str
+        )
+
+
+@bot.message_handler(is_chat=False, state=PaymentAccount.create, role=['admin'])
+def admin_create_payment_accoount(message):
+    with bot.retrieve_data(message.from_user.id) as data:
+        # print(db.create_payment_account(1, 1, account_parse_from_string(stri)))
+        user = json.loads(data['user'])
+        bank = json.loads(data['bank'])
+        accounts, acc_error = account_parse_from_string(message.text)
+
+        key_string = 'admin_data_bank_all_stroke'
+        if acc_error != []: key_string = 'admin_data_bank_not_all_stroke'
+
+        kb = MenuKeyboard.back_to(
+            user,
+            data=callback_data_admin_view_bank+str(bank['id']),
+            key_string='inline_back_to',
+        )
+
+        if accounts == []:
+            bot.send_message(
+                chat_id=message.from_user.id,
+                text=translate(user['language_code'], 'error_data_not_valid'),
+                reply_markup=kb
+            )
+            return
+
+        success_text = translate(user['language_code'], 'admin_data_bank_add_accounts_success')
+        success_text += translate(user['language_code'], key_string)
+
+        if acc_error != []:
+            for i in acc_error: success_text += "_" + ", ".join(i) + "_\n"
+
+        try:
+            db.create_payment_account(user['id'], bank['id'], accounts)
+
+            bot.send_message(
+                chat_id=message.from_user.id,
+                text=success_text,
+                reply_markup=kb
+            )
+        except Exception as e:
+            print(e)
+
+    # bot.delete_state(message.from_user.id)
+
+
+# ###########################################################################
+# ###########################################################################
+# ###########################################################################
+# ###########################################################################
+# ###########################################################################
+# ###########################################################################
+
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_delete_bank), role=['admin'])
 def admin_delete_bank(call):
     """ Предупреждение об удалении банка
     """
@@ -182,37 +305,6 @@ def admin_delete_bank(call):
     )
 
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_bank_accept_delete), is_admin=True)
-def admin_delete_bank_accept(call):
-    """ Удаление банка
-    """
-
-    user = db.get_user(call.from_user.id)
-    bank_id = call.data.replace(callback_data_admin_bank_accept_delete ,"")
-    bank = db.get_bank(bank_id, name_id="id")
-
-    db.delete_object(
-        table="banks",
-        name_id="id",
-        value=bank['id']
-    )
-
-    success_delete_bank_text = translate(
-        user['language_code'],
-        'admin_data_bank_delete_success'
-    ).format(**bank)
-
-    bot.edit_message_text(
-        chat_id=call.message.chat.id,
-        message_id=call.message.message_id,
-        text=success_delete_bank_text,
-        reply_markup=MenuKeyboard.back_to(
-            user,
-            data=callback_data_admin_banks,
-            key_string='inline_back_to',
-        )
-    )
-
 # ###########################################################################
 # ###########################################################################
 # ###########################################################################
@@ -220,7 +312,7 @@ def admin_delete_bank_accept(call):
 # ###########################################################################
 # ###########################################################################
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data == callback_data_admin_create_bank, is_admin=True)
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data == callback_data_admin_create_bank, role=['admin'])
 def admin_create_bank(call):
     """ Создание банка
     """
@@ -244,7 +336,7 @@ def admin_create_bank(call):
         )
 
 
-@bot.message_handler(is_chat=False, state=CreateBank.A1, is_admin=True)
+@bot.message_handler(is_chat=False, state=CreateBank.A1, role=['admin'])
 def admin_create_bank_a1(message):
 
     with bot.retrieve_data(message.from_user.id) as data:
@@ -261,7 +353,7 @@ def admin_create_bank_a1(message):
     bot.set_state(message.from_user.id, CreateBank.A2)
 
 
-@bot.message_handler(is_chat=False, state=CreateBank.A2, is_admin=True)
+@bot.message_handler(is_chat=False, state=CreateBank.A2, role=['admin'])
 def admin_create_bank_a2(message):
 
     with bot.retrieve_data(message.from_user.id) as data:
@@ -282,7 +374,7 @@ def admin_create_bank_a2(message):
     bot.set_state(message.from_user.id, CreateBank.A3)
 
 
-@bot.callback_query_handler(is_chat=False, state=CreateBank.A3, func=lambda call: call.data == callback_data_admin_create_bank_accept, is_admin=True)
+@bot.callback_query_handler(is_chat=False, state=CreateBank.A3, func=lambda call: call.data == callback_data_admin_create_bank_accept, role=['admin'])
 def admin_create_bank(call):
     """ Запись банка в базу данных
     """

@@ -1,14 +1,19 @@
 from loader import bot, config, db, ROOT_DIR
 from telebot import custom_filters
 import filters, handlers
+from middlewares.antiflood import AntiFloodMiddleware
 import argparse
 
+# Включаем фильтры
 bot.add_custom_filter(custom_filters.StateFilter(bot))
 bot.add_custom_filter(filters.main_filters.IsChat())
-bot.add_custom_filter(filters.main_filters.IsAdmin())
+bot.add_custom_filter(filters.main_filters.Role())
 bot.add_custom_filter(filters.main_filters.IsAmount())
 bot.add_custom_filter(filters.main_filters.IsCancelAction())
 bot.add_custom_filter(custom_filters.IsDigitFilter())
+
+# Включаем middlewares
+bot.setup_middleware(AntiFloodMiddleware(2))
 
 if __name__ == '__main__':
     # Команды для выполнения функция

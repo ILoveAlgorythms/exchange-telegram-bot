@@ -3,17 +3,22 @@ from utils.misc.data import (
     binance_get_price_pair,
     cryptoexchange_parse_rate
 )
-from utils.message_templates import get_admin_deal_text
+from utils.message_templates import get_admin_deal_text, get_requisites_text
+from utils.misc.exchange import add_spread, calculate_amount
+from utils.misc.accounts import extract_last_use_account, get_payment_account
+from utils.misc.restrictions import Restriction
 from states.states import ExchageState, UserDeal
 from keyboards.inline.menu import MenuKeyboard
 from telebot.formatting import escape_markdown
 from bot_locale.translate import translate
 from loader import bot, db, config, cache
+from datetime import datetime, timedelta
 import json
 
 callback_data_select_pair = 'bot.set.exchage_select_pair_'
 callback_data_select_from_bank = 'bot.set.exchage_select_from_bank_'
 callback_data_select_to_bank = 'bot.set.exchage_select_to_bank_'
+callback_data_input_amount = 'bot.set.exchage_input_amount_'
 callback_data_exchange_accept = 'bot.set.exchage_accept'
 callback_data_accept_agreement = 'bot.accept_agreement'
 callback_data_accept_deal_accept = 'bot.deal_change_status_accept_'
@@ -22,8 +27,6 @@ callback_data_open_user_chat = 'bot.deal_open_user_chat_'
 callback_data_deal_send_message = 'bot.deal_send_message_chat'
 callback_data_admin_work_open_deal = 'admin.open_work_deal_'
 cache_waiting_create_new_deal = '{0}_deal_locked_time'
-
-# cache_string_user_restrict_deal = 'deal_restrict_{telegram_id}'
 
 #======================================================#
 #===================СОЗДАНИЕ ОРДЕРА====================#
@@ -216,7 +219,6 @@ def state_a2(call):
     # Даём возможность ввести номер карты
     bot.set_state(call.from_user.id, ExchageState.A4)
 
-
 @bot.callback_query_handler(
     is_chat=False,
     func=lambda call: call.data.startswith(callback_data_select_to_bank),
@@ -273,22 +275,24 @@ def state_a5(message):
     user_id = message.from_user.id
     user = db.get_user(user_id)
     message_length = len(message.text)
+    lang = user['language_code']
 
     if message_length > 256 or message_length < 6:
         # Если указана сумма меньше или больше
         # допустимой суммы, выводим ошибку.
         bot.send_message(
             message.chat.id,
-            text=translate(user['language_code'], 'error_data_not_valid')
+            text=translate(lang, 'error_data_not_valid')
         )
         return
 
     with bot.retrieve_data(user_id) as data:
         data['requisites'] = json.dumps(message.text)
+        data['input_amount'] = 'from'
         pair = json.loads(data['pair'])
 
         exchange_text = translate(
-            user['language_code'],
+            lang,
             'exchange_input_from_amount'
         ).format(
             pair['from_name'],
@@ -296,15 +300,103 @@ def state_a5(message):
             pair['min_from_amount'],
             pair['max_from_amount']
         )
-        bot.send_message(
-            chat_id=message.chat.id,
-            text=exchange_text,
-            reply_markup=MenuKeyboard.reply_exchange_cancel(user)
-        )
+        string_input_asset_name = translate(lang, 'inline_input_asset_name').format(pair['to_name'])
+
+        try:
+            bot.send_message(
+                chat_id=message.chat.id,
+                text=exchange_text,
+                reply_markup=MenuKeyboard.smart({
+                    string_input_asset_name: {
+                        'callback_data': (callback_data_input_amount + str(data['input_amount']))
+                    }
+                })
+            )
+        except Exception as e:
+            print(e)
+
 
     # Даём возможность получить котировки обмена,
     # после вводы суммы обмена
     bot.set_state(message.from_user.id, ExchageState.A6)
+
+
+@bot.callback_query_handler(
+    is_chat=False,
+    func=lambda call: call.data.startswith(callback_data_input_amount),
+    state=ExchageState.A6
+)
+def state_a5(call):
+    """ Переключает ввод суммы from/to
+        активах
+    """
+    user_id = call.from_user.id
+    user = db.get_user(user_id)
+    lang = user['language_code']
+
+    with bot.retrieve_data(user_id) as data:
+        calldata = call.data.replace(callback_data_input_amount, "")
+        pair = json.loads(data['pair'])
+
+        direction_dict = {'from': 'to', 'to': 'from'}
+        direction = direction_dict.get(calldata)
+        data['input_amount'] = direction
+
+        string_input_text = 'exchange_input_from_amount'
+        string_input_asset_name = 'inline_input_asset_name'
+
+        from_name = pair['from_name']
+        to_name = pair['to_name']
+
+        if direction == 'to':
+            string_input_text = 'exchange_input_to_amount'
+
+            pair1 = calculate_amount(pair['min_from_amount'], pair)
+            pair2 = calculate_amount(pair['max_from_amount'], pair)
+
+            data['pair1'] = json.dumps(pair1, indent=4, sort_keys=True, default=str)
+            data['pair2'] = json.dumps(pair2, indent=4, sort_keys=True, default=str)
+
+            pair['min_from_amount'] = pair1['to_amount']
+            pair['max_from_amount'] = pair2['to_amount']
+
+            data['min_from_amount'] = pair1['to_amount']
+            data['max_from_amount'] = pair2['to_amount']
+
+            from_name = pair['to_name']
+            to_name = pair['from_name']
+
+        string_input_asset_name = translate(
+            lang,
+            string_input_asset_name
+        ).format(
+            to_name
+        )
+
+        exchange_text = translate(
+            lang,
+            string_input_text
+        ).format(
+            from_name,
+            to_name,
+            pair['min_from_amount'],
+            pair['max_from_amount']
+        )
+
+        try:
+            bot.edit_message_text(
+                chat_id=call.message.chat.id,
+                message_id=call.message.message_id,
+                text=exchange_text,
+                reply_markup=MenuKeyboard.smart({
+                    string_input_asset_name: {
+                        'callback_data': (callback_data_input_amount + str(direction))
+                    }
+                })
+            )
+        except Exception as e:
+            print(e)
+
 
 @bot.message_handler(is_chat=False, is_amount=False, state=ExchageState.A6, is_cancel_action=False)
 def error_state_a6(message):
@@ -318,18 +410,14 @@ def error_state_a6(message):
         text=translate(user['language_code'], 'error_data_not_valid')
     )
 
-def add_spread(num, spread):
-    """ Стыкует спред
-    """
-    return (num - (num * (spread / 100)))
-
 @bot.message_handler(is_chat=False, is_amount=True, state=ExchageState.A6, is_cancel_action=False)
-def state_a5(message):
+def state_a6(message):
     """ Показывает котировки
     """
     user_id = message.from_user.id
     user = db.get_user(user_id)
     amount = float(message.text)
+
     with bot.retrieve_data(user_id) as data:
         pair = json.loads(data['pair'])
         from_bank = json.loads(data['from_bank'])
@@ -337,6 +425,10 @@ def state_a5(message):
         requisites = json.loads(data['requisites'])
         min_amount = pair['min_from_amount']
         max_amount = pair['max_from_amount']
+
+        if data['input_amount'] == 'to':
+            min_amount = float(data['min_from_amount'])
+            max_amount = float(data['max_from_amount'])
 
         if amount > max_amount or amount < min_amount:
             # Если указана сумма меньше или больше
@@ -347,100 +439,33 @@ def state_a5(message):
             )
             return
 
-        _in = pair['from_name'] # отдаю
-        _out = pair['to_name'] # получаю
-        rate_from_name, rate_to_name = pair['from_name'], pair['to_name']
-        rate_from_amount, rate_to_amount = 1, 1
-        orig_calculated_amount = 0 # получаемая сумма без спреда
-        orig_finally_exchange_rate = 0 # курс обмена без спреда
-        calculated_amount = 0 # получаемая сумма
-        finally_exchange_rate = 0 # курс обмена
-        profit = 0 # ~профит со сделки
+        exchange_info = calculate_amount(amount, pair, data['input_amount'])
 
-        if pair['price_handler'] == 'cryptoexchage':
-            exchange_rate = cryptoexchange_parse_rate(
-                pair['from_handler_name'],
-                pair['to_handler_name']
-            )
-
-            _out = float(exchange_rate['out'])
-            _in = float(exchange_rate['in'])
-
-            if pair['handler_inverted'] == 1:
-                _out, _in = _in, _out
-
-            if _out == 1:
-                # if pair['handler_inverted'] == 1:
-                #     _out = _in
-                #     _in = _out
-                orig_calculated_amount = amount / _in
-                calculated_amount = (round(
-                    amount / add_spread(_in, pair['spread']),
-                    3
-                ))
-
-                orig_finally_exchange_rate = round(_in, 3)
-                finally_exchange_rate = round(add_spread(_in, pair['spread']), 3)
-                rate_from_amount, rate_to_amount = finally_exchange_rate, 1
-                profit = orig_calculated_amount - calculated_amount
-
-                if pair['handler_inverted'] == 1:
-                    rate_from_name, rate_to_name = pair['to_name'], pair['from_name']
-                    rate_from_amount, rate_to_amount = 1, finally_exchange_rate
-
-            if _in == 1:
-                # if pair['handler_inverted'] == 1:
-                #     _out = _in
-                #     _in = _out
-                orig_calculated_amount = amount * _out
-                print(orig_calculated_amount)
-                calculated_amount = (round(
-                    amount * add_spread(_out, pair['spread']),
-                    3
-                ))
-                finally_exchange_rate = round(add_spread(_out, pair['spread']), 3)
-                orig_finally_exchange_rate = round(_out, 3)
-                rate_from_amount, rate_to_amount = 1, finally_exchange_rate
-                profit = orig_calculated_amount - calculated_amount
-
-                if pair['handler_inverted'] == 1:
-                    rate_from_name, rate_to_name = pair['from_name'], pair['to_name']
-                    rate_from_amount, rate_to_amount = finally_exchange_rate, 1
-
-        if pair['price_handler'] == 'binance':
-            p2p_exchange_rate = binance_p2p_arithmetic_mean_data(
-                transAmount=calculated_amount,
-                fiat_asset=pair['to_name'],
-                payType=to_bank['slug'],
-                asset=pair['proxy_asset']
-            )
-
-        data['to_amount'] = calculated_amount
-        data['from_amount'] = amount
-        data['exchange_rate'] = finally_exchange_rate
-        data['to_bank_requisites'] = requisites
-        data['orig_calculated_amount'] = orig_calculated_amount
-        data['orig_finally_exchange_rate'] = orig_finally_exchange_rate
-        data['profit'] = profit
+        data['to_amount'] = exchange_info['to_amount']
+        data['from_amount'] = exchange_info['from_amount']
+        data['exchange_rate'] = exchange_info['exchange_rate']
+        data['orig_calculated_amount'] = exchange_info['orig_calculated_amount']
+        data['orig_finally_exchange_rate'] = exchange_info['orig_finally_exchange_rate']
         data['spread'] = pair['spread']
+        data['to_bank_requisites'] = requisites
 
         # Выводим котировки
         exchange_message = translate(
             user['language_code'],
             'exchange_issuing_quotes'
         ).format(**{
-            'to_amount': calculated_amount,
-            'to_name': pair['to_name'],
-            'from_bank_name': from_bank['name'],
-            'from_amount': amount,
-            'from_name': pair['from_name'],
-            'exchange_rate': finally_exchange_rate,
-            'to_bank_name': to_bank['name'],
+            'to_amount':          exchange_info['to_amount'],
+            'to_name':            pair['to_name'],
+            'from_bank_name':     from_bank['name'],
+            'from_amount':        exchange_info['from_amount'],
+            'from_name':          pair['from_name'],
+            'exchange_rate':      exchange_info['exchange_rate'],
+            'to_bank_name':       to_bank['name'],
             'to_bank_requisites': requisites,
-            'rate_from_name': rate_from_name,
-            'rate_from_amount': rate_from_amount,
-            'rate_to_name': rate_to_name,
-            'rate_to_amount': rate_to_amount,
+            'rate_from_name':     exchange_info['rate_from_name'],
+            'rate_from_amount':   exchange_info['rate_from_amount'],
+            'rate_to_name':       exchange_info['rate_to_name'],
+            'rate_to_amount':     exchange_info['rate_to_amount'],
         })
 
         introduction_deal = bot.send_message(
@@ -459,6 +484,14 @@ def state_a5(message):
 
     bot.set_state(message.from_user.id, ExchageState.A7)
 
+def get_restriction(key_string, user_id, expires_at, set=False):
+    key_string = key_string.format(user_id)
+    data = cache.get(key_string)
+
+    if data is None:
+        return False
+    return True
+
 @bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_exchange_accept), state=ExchageState.A7)
 def exchange_accept(call):
     """ Создание обмена в базе данных
@@ -467,8 +500,12 @@ def exchange_accept(call):
     user = db.get_user(user_id)
     lang = user['language_code']
     config = db.get_config()
-    is_lock_string = cache_waiting_create_new_deal.format(user['id'])
-    is_lock = cache.get(is_lock_string)
+    lock = Restriction.action(
+        cache_waiting_create_new_deal,
+        user['id'],
+        config['limit_deals_per'],
+        config['time_limit_deals']
+    )
 
     if user['is_banned'] == 1:
         bot.answer_callback_query(
@@ -478,7 +515,7 @@ def exchange_accept(call):
         )
         return
 
-    if is_lock:
+    if lock and user['role'] not in ['manager', 'admin']:
         bot.answer_callback_query(
             call.id,
             translate(lang, 'exceed_limit_deal'),
@@ -490,44 +527,57 @@ def exchange_accept(call):
         pair = json.loads(data['pair'])
         to_bank = json.loads(data['to_bank'])
         from_bank = json.loads(data['from_bank'])
+        deal_status = 'new'
+        payment_account_id = 0
+        requisites = None
+
+        if pair.get('auto_requisites'):
+            requisites = get_payment_account(pair, from_bank['id'])
+
+        if requisites != {}:
+            payment_account_id = requisites['account_id']
+            deal_status = 'process'
+
         try:
             deal = {
-                "manager_id": 0,
-                "user_id": user['id'],
-                "from_name": pair['from_name'],
-                "from_amount": data['from_amount'],
-                "from_bank_name": from_bank['name'],
-                "to_name": pair['to_name'],
-                "to_amount": data['to_amount'],
-                "to_bank_name": to_bank['name'],
-                "requisites": data['to_bank_requisites'],
-                "profit": data['profit'],
-                "exchange_rate": data['exchange_rate'],
-                "orig_exchange_rate": data['orig_finally_exchange_rate'],
-                "orig_to_amount": data['orig_calculated_amount'],
-                "spread": data['spread'],
-                "calculated_amount": 1,
-                "status": 'new',
+                "manager_id":               0,
+                "user_id":                  user['id'],
+                "from_name":                pair['from_name'],
+                "from_amount":              data['from_amount'],
+                "from_bank_name":           from_bank['name'],
+                "from_bank_id":             from_bank['id'],
+                "from_payment_account_id":  payment_account_id,
+                "to_name":                  pair['to_name'],
+                "to_amount":                data['to_amount'],
+                "to_bank_name":             to_bank['name'],
+                "requisites":               data['to_bank_requisites'],
+                "exchange_rate":            data['exchange_rate'],
+                "orig_exchange_rate":       data['orig_finally_exchange_rate'],
+                "orig_to_amount":           data['orig_calculated_amount'],
+                "spread":                   data['spread'],
+                "calculated_amount":        1,
+                "status":                   deal_status,
             }
 
             # Создаю сделку в базе
             order_id = db.create_deal(deal)
 
-            cache.set(is_lock_string, user_id)
-            cache.expire(is_lock_string, 900) # 15 min
+            # cache.set(is_lock_string, user_id)
+            # cache.expire(is_lock_string, (config['time_limit_deals'] * 60)) # 15 min
 
+            kb = None
             exchange_text = translate(
                 user['language_code'],
                 'exchange_deal_created'
             ).format(**{
-                "id": order_id,
-                "to_amount": data['to_amount'],
-                "to_name": pair['to_name'],
-                "to_bank_name": to_bank['name'],
-                "from_amount": data['from_amount'],
-                "from_name": pair['from_name'],
+                "id":             order_id,
+                "to_amount":      data['to_amount'],
+                "to_name":        pair['to_name'],
+                "to_bank_name":   to_bank['name'],
+                "from_amount":    data['from_amount'],
+                "from_name":      pair['from_name'],
                 "from_bank_name": from_bank['name'],
-                "requisites": data['to_bank_requisites'],
+                "requisites":     data['to_bank_requisites'],
             })
 
             bot.delete_message(
@@ -535,13 +585,22 @@ def exchange_accept(call):
                 message_id=data['introduction_deal_mid'],
             )
 
+            if pair.get('auto_requisites') and requisites != {}:
+                deal = db.get_deal(order_id)
+                exchange_text, kb = get_requisites_text(user, deal, payment_account_id)
+
             bot.edit_message_text(
                 chat_id=call.message.chat.id,
                 message_id=call.message.message_id,
-                text=exchange_text
+                text=exchange_text,
+                reply_markup=kb
             )
         except Exception as e:
             print(e)
+
+        if pair.get('auto_requisites') and requisites != {}:
+            # КОСТЫЛЬ: отменяем дальнейшие действия
+            return False
 
         try:
             # Отправляем уведомление о сделке
@@ -555,7 +614,7 @@ def exchange_accept(call):
         except Exception as e:
             print(e)
 
-    bot.delete_state(call.from_user.id)
+    # bot.delete_state(call.from_user.id)
 
 
 #======================================================#
@@ -726,6 +785,18 @@ def bot_to_main_menu(call):
                 )
             )
 
+            # key_string_back_to = translate(user['language_code'], 'inline_back_to_main_menu')
+            # bot.send_message(
+            #     chat_id=call.message.chat.id,
+            #     text=translate(
+            #         user['language_code'],
+            #         'user_deal_change_status_paid'
+            #     ),
+            #     reply_markup=MenuKeyboard.smart({
+            #         key_string_back_to: {'callback_data': 'bot.back_to_main_menu'}
+            #     })
+            # )
+
             if data.get('content_type') is not None:
                 db.create_message(
                     user_id=user['id'],
@@ -781,6 +852,7 @@ def bot_to_main_menu(call):
                     bot.send_document(config['notifications_deal_chat_id'], data['attach']['data'], caption=msg_attach, reply_to_message_id=m.message_id, reply_markup=kb)
             except Exception as e:
                 print(e)
+
 
     bot.delete_state(call.from_user.id)
 

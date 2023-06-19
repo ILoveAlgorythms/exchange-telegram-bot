@@ -1,15 +1,19 @@
-from . import exchange
-from . import general
 from .admin import (
-    general,
+    general as admin_general,
     open_deals,
     pages,
     search,
     pairs,
     countries,
     banks,
-    open_tickets
+    open_tickets,
+    limits
 )
-from . import chat
-from . import support
-from . import disput_deal
+from . import (
+    general as user_general,
+    exchange,
+    chat,
+    support,
+    disput_deal,
+    undefined # ставить всегда последним в списке
+)

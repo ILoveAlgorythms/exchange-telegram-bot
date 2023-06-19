@@ -16,10 +16,13 @@ class AdminKeyboard:
             [InlineKeyboardButton(translate(lang, 'inline_admin_problems_with_orders').format(stats['dealsd']), callback_data='admin.open_disput_deals')],
             [InlineKeyboardButton(translate(lang, 'inline_admin_support_requests').format(stats['open_tickets']), callback_data='admin.support_tickets')],
             [InlineKeyboardButton(translate(lang, 'inline_admin_logs'), callback_data='admin.search_deals')],
-            [InlineKeyboardButton(translate(lang, 'inline_admin_params_exchange'), callback_data='admin.params')],
             [InlineKeyboardButton(translate(lang, is_break), callback_data='admin.params_change_techinal_break')],
-            [InlineKeyboardButton(translate(lang, 'inline_back_to_main_menu'), callback_data='bot.back_to_main_menu')],
         ])
+
+        if 'admin' in user['role']:
+            kb.add(InlineKeyboardButton(translate(lang, 'inline_admin_params_exchange'), callback_data='admin.params'))
+
+        kb.add(InlineKeyboardButton(translate(lang, 'inline_back_to_main_menu'), callback_data='bot.back_to_main_menu'))
 
         return kb
 
@@ -137,6 +140,7 @@ class AdminKeyboard:
         kb = InlineKeyboardMarkup()
         pair_id = str(pair['id'])
         pair_status_string = 'inline_admin_pair_active' if pair['is_active'] == 1 else 'inline_admin_pair_inactive'
+        pair_auto_requisites_string = 'inline_admin_pair_auto_requisites_active' if pair['auto_requisites'] == 1 else 'inline_admin_pair_auto_requisites_inactive'
 
         for k, v in params.items():
             kb.add(
@@ -145,6 +149,13 @@ class AdminKeyboard:
                     callback_data=f'admin.params_pair_edit_{k}|{pair_id}'
                 ),
             )
+
+        kb.add(
+            InlineKeyboardButton(
+                translate(lang, pair_auto_requisites_string),
+                callback_data=f'admin.params_pair_edit_auto_requisites|{pair_id}'
+            ),
+        )
 
         kb.add(
             InlineKeyboardButton(
@@ -175,10 +186,10 @@ class AdminKeyboard:
         """
         lang = user['language_code']
         kb = InlineKeyboardMarkup([
-            [InlineKeyboardButton(translate(lang, 'inline_admin_countries'), callback_data='admin.params_countries')],
-            [InlineKeyboardButton(translate(lang, 'inline_admin_banks'), callback_data='admin.params_banks')],
-            [InlineKeyboardButton(translate(lang, 'inline_admin_pairs'), callback_data='admin.params_pairs')],
-            [InlineKeyboardButton(translate(lang, 'inline_admin_pages'), callback_data='admin.pages')],
+            [InlineKeyboardButton(translate(lang, 'inline_admin_countries'), callback_data='admin.params_countries'), InlineKeyboardButton(translate(lang, 'inline_admin_banks'), callback_data='admin.params_banks')],
+            [InlineKeyboardButton(translate(lang, 'inline_admin_pairs'), callback_data='admin.params_pairs'), InlineKeyboardButton(translate(lang, 'inline_admin_pages'), callback_data='admin.pages')],
+            [InlineKeyboardButton(translate(lang, 'inline_params_limits'), callback_data='admin.params_limits'), InlineKeyboardButton(translate(lang, 'inline_params_rooms'), callback_data='admin.params_rooms')],
+            [InlineKeyboardButton(translate(lang, 'inline_params_export'), callback_data='admin.params_export'), InlineKeyboardButton(translate(lang, 'inline_params_affilate_program'), callback_data='admin.params_affilate')],
             [InlineKeyboardButton(translate(lang, 'inline_back_to'), callback_data='admin.back_to_home')],
         ])
 
@@ -306,6 +317,11 @@ class AdminKeyboard:
                InlineKeyboardButton(translate(lang, 'inline_deal_change_status_decline'), callback_data='admin.deal_change_status_declined_'+str(deal['id']))
             )
 
+        if deal['status'] in ['completed'] and deal['profit'] == 0:
+            kb.add(
+               InlineKeyboardButton(translate(lang, 'inline_deal_input_profit'), callback_data='admin.deal_set_profit_'+str(deal['id']))
+            )
+
         if deal['status'] == 'dispute':
             back_menu = 'admin.open_disput_deals'
 
@@ -356,7 +372,7 @@ class AdminKeyboard:
         kb.add(
             InlineKeyboardButton(
                 translate(lang, 'inline_back_to'),
-                callback_data='admin.back_to_home'
+                callback_data='admin.params'
             ),
         )
 
@@ -457,6 +473,20 @@ class AdminKeyboard:
 
         kb.add(
             InlineKeyboardButton(
+                translate(lang, 'inline_admin_add_bank_accoount'),
+                callback_data='admin.params_bank_add_bank_account_'+str(bank['id'])
+            )
+        )
+
+        kb.add(
+            InlineKeyboardButton(
+                translate(lang, 'inline_admin_stats_bank_accoount'),
+                callback_data='admin.params_bank_stats_bank_accounts_'+str(bank['id'])
+            )
+        )
+
+        kb.add(
+            InlineKeyboardButton(
                 translate(lang, 'inline_back_to'),
                 callback_data='admin.params_banks'
             ),
@@ -477,8 +507,10 @@ class MenuKeyboard:
             InlineKeyboardButton(translate(lang, 'inline_my_exchanges'), callback_data='bot.main.my_exchanges')],
             [InlineKeyboardButton(translate(lang, 'inline_faq'), callback_data='bot.main.page.faq'),
             InlineKeyboardButton(translate(lang, 'inline_support'), callback_data='bot.main.support')],
+            [InlineKeyboardButton(translate(lang, 'inline_affilate_program'), callback_data='bot.main.affilate_program')],
         ])
-        if user['is_admin']:
+
+        if user['role'] in ['manager', 'admin']:
             kb.add(
                 InlineKeyboardButton(translate(lang, 'inline_admin_panel'), callback_data='admin.back_to_home')
             )
@@ -733,6 +765,14 @@ class MenuKeyboard:
         finish_exchange.add(KeyboardButton(translate(lang, 'reply_exchange_cancel')))
 
         return finish_exchange
+
+    @staticmethod
+    def smart(json, row_width=1):
+        """ Кастомная клавиатура из JSON
+        """
+        from telebot.util import quick_markup
+
+        return quick_markup(json, row_width=row_width)
 
     @staticmethod
     def remove_reply():
