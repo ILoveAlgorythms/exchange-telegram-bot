@@ -8,10 +8,21 @@ from keyboards.inline.menu import MenuKeyboard
 from telebot.formatting import escape_markdown
 from bot_locale.translate import translate
 from loader import bot, db, config
+from datetime import datetime, timedelta
 import json
 
 callback_data_deal_open_disput = 'bot.deal_open_dispute_'
 callback_data_deal_create_disput = 'bot.deal_create_dispute'
+
+def exceed_time(config, time):
+    dispute_limit_time = timedelta(minutes=config['time_limit_dispute'])
+    last_update = datetime.strptime(
+        str(time),
+        '%Y-%m-%d %H:%M:%S'
+    )
+    diff = last_update + dispute_limit_time
+
+    return diff > datetime.now()
 
 @bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_deal_open_disput))
 def open_dispute_deal(call):
@@ -21,6 +32,15 @@ def open_dispute_deal(call):
     deal_id = call.data.replace(callback_data_deal_open_disput, "")
     user = db.get_user(call.from_user.id)
     deal = db.get_deal(deal_id)
+    config = db.get_config()
+
+    if exceed_time(config, deal['updated_at']) == False:
+        bot.answer_callback_query(
+            call.id,
+            translate(user['language_code'], 'dispute_not_available'),
+            show_alert=True
+        )
+        return
 
     if (
         deal['user_id'] != user['id'] or

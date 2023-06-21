@@ -13,7 +13,7 @@ bot.add_custom_filter(filters.main_filters.IsCancelAction())
 bot.add_custom_filter(custom_filters.IsDigitFilter())
 
 # Включаем middlewares
-bot.setup_middleware(AntiFloodMiddleware(2))
+bot.setup_middleware(AntiFloodMiddleware(1))
 
 if __name__ == '__main__':
     # Команды для выполнения функция

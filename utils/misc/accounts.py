@@ -27,21 +27,20 @@ def get_payment_account(pair: dict = {}, bank_id: int = 1) -> dict:
 
     # Выбираем аккаунт, который использовался раньше всех
     # или вообще не использовался (NULL) за текущие сутки (с 00:00:00)
-    min_date = min(card_list, key=extract_last_use_account)
+    # min_date = min(card_list, key=extract_last_use_account)
 
     for card in card_list:
         if card['bank_id'] != bank_id: continue
-        # card['total_sum'] > card['account_limit']: continue
 
         # Выбираем наименьшее значение (кол-во использований и суточный баланс)
         if (
             card['total_sum'] < min_sum and
             card['total_uses'] < min_uses and
-            card['total_sum'] >= card['account_limit']
+            card['total_sum'] <= card['account_limit']
             # min_date['account_id'] == card['account_id']
         ):
-            min_sum = card['total_sum']
-            min_uses = card['total_uses']
+            min_sum     = card['total_sum']
+            min_uses    = card['total_uses']
             chosen_card = {
                 'bank_name': card['bank_name'],
                 'account_id': card['account_id'],

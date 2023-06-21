@@ -174,6 +174,30 @@ def admin_edit_pair(call):
         )
         return
 
+    if parameter == 'verification_account':
+        bot.answer_callback_query(
+            call.id,
+            'Success!'
+        )
+
+        verification_account = 1 if pair['verification_account'] == 0 else 0
+        pair['verification_account'] = verification_account
+
+        db.update_pair(pair_id=pair['id'], args={'verification_account': verification_account})
+
+        edit_pair_text = translate(
+            user['language_code'],
+            'admin_data_pair_view'
+        ).format(**pair)
+
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            text=edit_pair_text,
+            reply_markup=AdminKeyboard.edit_pair(user, pair, params)
+        )
+        return
+
     if parameter == 'auto_requisites':
         bot.answer_callback_query(
             call.id,

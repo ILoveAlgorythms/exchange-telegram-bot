@@ -3,7 +3,10 @@ from bot_locale.translate import translate
 from keyboards.inline.menu import MenuKeyboard
 from telebot.util import extract_arguments
 from utils.misc.data import cryptoexchange_parse_rate
+from utils.message_templates import get_user_deal_text
+from utils.misc.view_page import page_send_message
 import json
+from math import ceil
 
 callback_data_select_user_deal = 'bot.my_exchanges.id_'
 callback_data_admin_work_open_deal = 'admin.open_work_deal_'
@@ -68,36 +71,7 @@ def start_handler(message):
     user = db.get_user(message.from_user.id)
     page = db.get_page(slug=2, name_id='id') or {}
 
-    if page.get("document") != "null":
-        document = json.loads(page['document'])
-        file = document['file_id']
-
-        try:
-            bot.get_file(file)
-        except Exception as e:
-            file = open(ROOT_DIR + document['path'], 'rb')
-
-        bot.send_document(
-            chat_id=message.chat.id,
-            document=file,
-            caption=page.get(
-                'page_content',
-                translate(user['language_code'], 'page_not_found')
-            ),
-            reply_markup=MenuKeyboard.back_to(user)
-        )
-
-        return
-
-    bot.send_message(
-        chat_id=message.chat.id,
-        text=page.get(
-            'page_content',
-            translate(user['language_code'], 'page_not_found')
-        ),
-        reply_markup=MenuKeyboard.back_to(user)
-    )
-
+    page_send_message(message.from_user.id, user, page, MenuKeyboard.back_to(user))
 
 @bot.callback_query_handler(is_chat=False, func=lambda call: call.data == 'bot.back_to_main_menu')
 def bot_to_main_menu(call):
@@ -140,32 +114,98 @@ def view_user_deal(call):
         # Ничего не делаем
         return
 
-    deal_status = translate(user['language_code'], 'dict_deal_status')
-    deal_status_text = translate(user['language_code'], 'dict_deal_status_text')
+    deal_text, kb = get_user_deal_text(user, deal)
 
-    deal_text = translate(
-        user['language_code'],
-        'my_exchange_deal_info'
-    ).format(**{
-        "id":                 deal['id'],
-        "from_amount":        deal['from_amount'],
-        "from_name":          deal['from_name'],
-        "from_bank_name":     deal['from_bank_name'],
-        "from_exchange_rate": deal['exchange_rate'],
-        "to_amount":          deal['to_amount'],
-        "to_name":            deal['to_name'],
-        "to_bank_name":       deal['to_bank_name'],
-        "requisites":         deal['requisites'],
-        "status_emoji":       deal_status[deal['status']],
-        "status_text":        deal_status_text[deal['status']].lower(),
-        "datetime":           deal['created_at'],
-        "update_datetime":    deal['updated_at'],
-    })
     bot.edit_message_text(
         chat_id=call.message.chat.id,
         message_id=call.message.message_id,
         text=deal_text,
-        reply_markup=MenuKeyboard.back_to(user, key_string='inline_back_to', data='bot.main.my_exchanges')
+        reply_markup=kb
+    )
+
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith('deal_page'))
+def view_user_deal(call):
+    """ Отображает данные сделок (пагинация)
+    """
+    deal_page = call.data.replace(deal_page, "")
+    user = db.get_user(call.from_user.id)
+    deal = db.get_deal(deal_id)
+
+    if deal is None or deal['user_id'] != user['id']:
+        # Ничего не делаем
+        return
+
+    deal_text, kb = get_user_deal_text(user, deal)
+
+    bot.edit_message_text(
+        chat_id=call.message.chat.id,
+        message_id=call.message.message_id,
+        text=deal_text,
+        reply_markup=kb
+    )
+
+# ========================Отображение данных о сделке========================
+@bot.message_handler(is_chat=False, func=lambda message: message.text.startswith('/D'))
+def view_user_deal_by_uid(message):
+    """ Отображает данные сделки по UID
+    """
+    deal_uid = message.text.replace("/D", "")
+    if len(deal_uid) < 6: return
+
+    user = db.get_user(message.from_user.id)
+    deal = db.get_deal(deal_uid, name_id="uid")
+
+    if deal is None or deal['user_id'] != user['id']:
+        # Ничего не делаем
+        return
+
+    deal_text, kb = get_user_deal_text(user, deal)
+
+    bot.send_message(
+        chat_id=message.from_user.id,
+        text=deal_text,
+        reply_markup=kb
+    )
+
+@bot.callback_query_handler(is_chat=False,
+func=lambda call: call.data.startswith('bot.deal_page_'))
+def deal_page_pagination(call):
+    """ Мини-пагинация
+
+        (ужасная реализация, переписать)
+    """
+    limit_per_page = 5
+
+    current_page = int(call.data.replace('bot.deal_page_', ''))
+    user = db.get_user(call.from_user.id)
+    deal_count = db.get_count("deals", sql=f"WHERE user_id = {user['id']}")
+
+    pages = ceil(deal_count / limit_per_page)
+    start_limit = 0
+    end_limit = start_limit + limit_per_page
+
+    if current_page != 1:
+        start_limit = (current_page - 1) * limit_per_page
+
+    if current_page == pages and deal_count % limit_per_page != 0:
+        end_limit = start_limit + deal_count % limit_per_page
+
+    user_deals = db.get_deals(user['id'], start_limit=start_limit, end_limit=end_limit)
+
+    lang = user['language_code']
+
+    deal_text = translate(lang, 'chapter_my_exchanges')
+    deal_status = translate(lang, 'dict_deal_status')
+    stroke = "\n\n"
+
+    for deal in user_deals:
+        stroke += f"{deal_status[deal['status']]} {deal['created_at']} /D{deal['uid']}\n{deal['from_amount']} {deal['from_name']} ➡️ {deal['to_amount']} {deal['to_name']}\n\n"
+
+    bot.edit_message_text(
+        chat_id=call.message.chat.id,
+        message_id=call.message.message_id,
+        text=stroke,
+        reply_markup=MenuKeyboard.object_pagination(current_page, pages)
     )
 
 @bot.callback_query_handler(is_chat=False,
@@ -178,9 +218,16 @@ def bot_main_callback_funcions(call):
     user = db.get_user(call.from_user.id)
 
     if calldata == 'my_exchanges':
+
         # Выводит информацию о сделках пользователя
         #
+        # Пардон за сумбурное написание всего этого добра...
+        #
+        deal_count = db.get_count("deals", sql=f"WHERE user_id = {user['id']}")
+        current_page, pages = 1, ceil(deal_count / 5)
+
         user_deals = db.get_deals(user['id'], end_limit=5)
+
         lang = user['language_code']
 
         deal_text = translate(lang, 'chapter_my_exchanges')
@@ -188,15 +235,21 @@ def bot_main_callback_funcions(call):
         stroke = "\n\n"
 
         for deal in user_deals:
-            stroke += f"{deal_status[deal['status']]} {deal['created_at']} /TEST\n{deal['from_amount']} {deal['from_name']} ➡️ {deal['to_amount']} {deal['to_name']}\n\n"
+            stroke += f"{deal_status[deal['status']]} {deal['created_at']} /D{deal['uid']}\n{deal['from_amount']} {deal['from_name']} ➡️ {deal['to_amount']} {deal['to_name']}\n\n"
+        else:
+            stroke += translate(lang, 'deals_not_found')
 
-        deal_text += stroke
 
         bot.edit_message_text(
             chat_id=call.message.chat.id,
             message_id=call.message.message_id,
             text=deal_text,
-            reply_markup=MenuKeyboard.deals(user, user_deals, callback_data_select_user_deal)
+        )
+
+        bot.send_message(
+            chat_id=call.message.chat.id,
+            text=stroke,
+            reply_markup=MenuKeyboard.object_pagination(1, pages)
         )
 
     if calldata == 'support':

@@ -11,6 +11,22 @@ callback_data_admin_open_tickets = 'admin.support_tickets'
 callback_data_admin_work_open_ticket = 'admin.open_work_ticket_'
 callback_data_admin_change_tecnical_break = 'admin.params_change_techinal_break'
 
+
+def get_profile_text():
+    pass
+
+@bot.message_handler(is_chat=False, commands=['u'], role=['admin', 'manager'])
+def profile_handler(message):
+    user = db.get_user(message.from_user.id)
+    lang = user['language_code']
+    args = extract_arguments(message.text)
+
+    if not args:
+        bot.send_message(message.from_user.id, translate(lang, 'incorrect_arguments').format(message.text))
+        return
+
+
+
 @bot.message_handler(is_chat=False, commands=['admin'], role=['manager', 'admin'])
 def admin_home(message):
     """ BOT /admin
@@ -57,7 +73,7 @@ def admin_home(message):
         )
     )
 
-@bot.message_handler(is_chat=False, commands=['set_admin'], role=['manager', 'admin'])
+@bot.message_handler(is_chat=False, commands=['set_admin'], role=['admin'])
 def set_admin(message):
     """ BOT /set_admin
         Даёт/забирает админку у пользователя по id/username
@@ -95,11 +111,11 @@ def set_admin(message):
         return
 
     if search_user['is_admin'] == 1:
-        db.update_user(search_user['telegram_id'], args={'is_admin': 0})
+        db.update_user(search_user['telegram_id'], args={'role': 'user'})
         msg = translate(user['language_code'], 'admin_user_is_not_admin').format(search_user['telegram_id'], escape_markdown(search_user['username']))
 
     if search_user['is_admin'] == 0:
-        db.update_user(search_user['telegram_id'], args={'is_admin': 1})
+        db.update_user(search_user['telegram_id'], args={'role': 'admin'})
         msg = translate(user['language_code'], 'admin_user_is_admin').format(search_user['telegram_id'], escape_markdown(search_user['username']))
 
     bot.send_message(
@@ -197,7 +213,7 @@ def admin_change_technical_break(call):
         )
     )
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data == callback_data_admin_params, role=['admin'])
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data == callback_data_admin_params, role=['admin', 'manager'])
 def admin_back_to_home(call):
     """ Настройки бота
     """
@@ -233,6 +249,24 @@ def admin_back_to_home(call):
             WHERE status = 'dispute'
         """
     )
+    # Кол-во сделок оспариваемых
+    from datetime import datetime
+    import time
+
+    profit = {}
+    profit_deals = db.get_deals(
+        data=['completed'],
+        name_id='status',
+        sql=f"""
+            AND CURDATE() = "{time.strftime('%Y-%m-%d')}"
+        """
+    )
+
+    for i in profit_deals:
+        if profit.get(i.get('profit_asset')) is None:
+            profit[str(i.get('profit_asset'))] = 0
+        profit[i.get('profit_asset')] += float(i.get('profit'))
+
     # Кол-во открытых тикетов
     open_ticket_count = db.get_count(
         table='dialogs',
@@ -241,10 +275,14 @@ def admin_back_to_home(call):
         """
     )
 
+    t = ''
+    for k, v in profit.items():
+        t += f"\n{v} {k}"
+
     bot.edit_message_text(
         chat_id=call.message.chat.id,
         message_id=call.message.message_id,
-        text=f'Total users: {users_count}',
+        text=f'*Total users:* {users_count}\n\n*Today profit:*{t}',
         reply_markup=AdminKeyboard.home(
             user,
             stats={

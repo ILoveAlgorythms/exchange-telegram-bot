@@ -26,8 +26,8 @@ def get_text_payment_accounts(bank_id):
     accounts_text = "\n"
     table = []
 
-    if accounts is None:
-        accounts_text = "---"
+    if accounts == []:
+        accounts_text = "\nнет счетов для отображения"
         return accounts_text
 
     for acc in accounts:
@@ -37,11 +37,11 @@ def get_text_payment_accounts(bank_id):
         info = acc.get('account_info')
         total_sum = acc.get('total_sum')
 
-        accounts_text += f"_{number} | {info} | {total_sum}_\n"
+        accounts_text += f"_{number}, {info}, {total_sum}_ /accdel{acc.get('account_id')}\n"
 
     return accounts_text
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data == callback_data_admin_banks, role=['admin'])
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data == callback_data_admin_banks, role=['admin', 'manager'])
 def admin_banks_list(call):
     """ Отображает список банков
     """
@@ -62,7 +62,7 @@ def admin_banks_list(call):
     )
 
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_view_bank), role=['admin'])
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_view_bank), role=['admin', 'manager'])
 def admin_preview_bank(call):
     """ Отображает содержимое и кнопки управления банком
     """
@@ -183,7 +183,7 @@ def edit_bank_param(message):
 # ###########################################################################
 
 
-@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_add_bank_acсount), role=['admin'])
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_admin_add_bank_acсount), role=['admin', 'manager'])
 def admin_add_payment_account(call):
     """ Добавление новых карт
     """
@@ -226,7 +226,7 @@ def admin_add_payment_account(call):
         )
 
 
-@bot.message_handler(is_chat=False, state=PaymentAccount.create, role=['admin'])
+@bot.message_handler(is_chat=False, state=PaymentAccount.create, role=['admin', 'manager'])
 def admin_create_payment_accoount(message):
     with bot.retrieve_data(message.from_user.id) as data:
         # print(db.create_payment_account(1, 1, account_parse_from_string(stri)))
@@ -259,7 +259,6 @@ def admin_create_payment_accoount(message):
 
         try:
             db.create_payment_account(user['id'], bank['id'], accounts)
-
             bot.send_message(
                 chat_id=message.from_user.id,
                 text=success_text,
@@ -268,8 +267,26 @@ def admin_create_payment_accoount(message):
         except Exception as e:
             print(e)
 
-    # bot.delete_state(message.from_user.id)
+    bot.delete_state(message.from_user.id)
 
+@bot.message_handler(is_chat=False, func=lambda message: message.text.startswith('/accdel'), role=['manager', 'admin'])
+def delete_payment_account(message):
+    user = db.get_user(message.from_user.id)
+    lang = user['language_code']
+    acc_id = message.text.replace('/accdel', '')
+    account = db.get_payment_account(acc_id)
+    inline_back_to = translate(lang, 'inline_back_to')
+    key_string = translate(lang, 'object_not_found')
+    kb = None
+
+    if account:
+        kb = MenuKeyboard.smart({
+            inline_back_to: {'callback_data': callback_data_admin_view_bank+str(account['bank_id'])}
+        })
+        key_string = translate(lang, 'object_deleted').format(f"_{account.get('account')}, {account.get('account_info')}, {account.get('account_limit')}_")
+        db.update_payment_account(acc_id, args={'status': 'deleted'})
+
+    bot.send_message(message.from_user.id, key_string, reply_markup=kb)
 
 # ###########################################################################
 # ###########################################################################

@@ -17,8 +17,8 @@ class AntiFloodMiddleware(BaseMiddleware):
             return
         if message.date - self.last_time[message.from_user.id] < self.limit:
             # User is flooding
-            bot.send_message(
-                message.chat.id,
+            bot.reply_to(
+                message,
                 translate(message.from_user.language_code, 'input_spam_detection')
             )
             return CancelUpdate()

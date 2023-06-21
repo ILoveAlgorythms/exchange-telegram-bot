@@ -5,7 +5,7 @@ def add_spread(num, spread):
     """
     return (num - (num * (spread / 100)))
 
-def calculate_amount(amount: float = 0, pair: dict = {}, mode: str = 'from'):
+def calculate_amount(amount: float = 0, pair: dict = {}, mode: str = 'from') -> dict:
     """ Считает сумму обмена
 
         :amount: сумма

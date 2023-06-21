@@ -531,10 +531,57 @@ def exchange_accept(call):
         payment_account_id = 0
         requisites = None
 
+
+        try:
+
+            if pair['verification_account'] and user['role'] in ['user']:
+                key_string_card_verification = translate(lang, 'inline_card_verification')
+                key_string_full_verification = translate(lang,'inline_full_verification')
+                verify = json.loads(user['verification_data'])
+
+                kb = {
+                    key_string_card_verification: {'callback_data': 'te'},
+                    key_string_full_verification: {'callback_data': 'te'}
+                }
+
+                if user['verification'] in ['process']:
+                    bot.answer_callback_query(
+                        call.id,
+                        translate(lang, 'inline_process_verification'),
+                        show_alert=True
+                    )
+                    return
+
+                if (
+                    user['verification'] in ['anonymous'] or
+                    user['verification'] in ['card_verified'] and
+                    data['to_bank_requisites'] != verify.get('card_verified')
+                ):
+                    if user['verification'] == 'card_verified':
+                        del kb[key_string_card_verification]
+
+                    page_verification = db.get_page(4, name_id='id')
+
+                    from utils.misc.view_page import page_send_message
+
+                    bot.delete_message(chat_id=call.message.chat.id,
+                    message_id=call.message.message_id)
+
+                    page_send_message(call.message.chat.id, user, page_verification)
+
+                    bot.send_message(
+                        chat_id=call.message.chat.id,
+                        text=translate(lang, 'verification_text'),
+                        reply_markup=MenuKeyboard.smart(kb)
+                    )
+                    return
+        except Exception as e:
+            print(e)
+
         if pair.get('auto_requisites'):
             requisites = get_payment_account(pair, from_bank['id'])
 
-        if requisites != {}:
+        if type(requisites) == dict and requisites != {}:
             payment_account_id = requisites['account_id']
             deal_status = 'process'
 
@@ -621,7 +668,6 @@ def exchange_accept(call):
 #=================ПОДТВЕРЖДЕНИЕ ОПЛЛАТЫ================#
 #======================================================#
 
-
 @bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith(callback_data_accept_deal_accept))
 def accept_paid_deal(call):
     """ Пользователь подтверждает,
@@ -697,6 +743,13 @@ def not_supported_message(message):
                 cl_decline='bot.back_to_main_menu',
                 key_string_decline='inline_back_to_main_menu',
             )
+            # reply_markup=MenuKeyboard.smart({
+            #     user,
+            #     cl_accept=callback_data_accept_deal_paid+str(deal['id']),
+            #     key_string_accept='inline_deal_user_deal_paid_',
+            #     cl_decline='bot.back_to_main_menu',
+            #     key_string_decline='inline_back_to_main_menu',
+            # })
         )
 
 @bot.message_handler(is_chat=False, state=UserDeal.requisites, content_types=['text', 'photo', 'video', 'document'])
@@ -769,6 +822,8 @@ def bot_to_main_menu(call):
                 name_id="deal_id"
             )
 
+            key_string_back_to = translate(user['language_code'], 'inline_back_to_main_menu')
+
             bot.edit_message_text(
                 message_id=call.message.message_id,
                 chat_id=call.message.chat.id,
@@ -782,20 +837,11 @@ def bot_to_main_menu(call):
                     'user_deal_change_status_paid'
                 ).format(
                     deal['id']
-                )
+                ),
+                reply_markup=MenuKeyboard.smart({
+                    key_string_back_to: {'callback_data': 'bot.back_to_main_menu'}
+                })
             )
-
-            # key_string_back_to = translate(user['language_code'], 'inline_back_to_main_menu')
-            # bot.send_message(
-            #     chat_id=call.message.chat.id,
-            #     text=translate(
-            #         user['language_code'],
-            #         'user_deal_change_status_paid'
-            #     ),
-            #     reply_markup=MenuKeyboard.smart({
-            #         key_string_back_to: {'callback_data': 'bot.back_to_main_menu'}
-            #     })
-            # )
 
             if data.get('content_type') is not None:
                 db.create_message(
@@ -807,11 +853,8 @@ def bot_to_main_menu(call):
                 )
 
             db.update_deal(deal['id'], {'status': 'paid'})
-        except Exception as e:
-            print(e)
 
-        if config['notifications_deal_chat_id'] is not False:
-            try:
+            if config['notifications_deal_chat_id'] is not False:
                 kb = MenuKeyboard.notification_deal(user, deal['id'])
                 m = bot.send_message(
                     chat_id=config['notifications_deal_chat_id'],
@@ -827,32 +870,29 @@ def bot_to_main_menu(call):
                     reply_markup=kb
                 )
 
-                if data.get('content_type') is None:
+                if data.get('content_type') is not None:
                     # Если ничего не заполнено, не отправляем аттачи
-                    return
+                    msg_attach = translate(
+                        user['language_code'],
+                        'msg_deal_attachment'
+                    ).format(**{
+                        "id": deal['id'],
+                        "text": escape_markdown(data['message'])
+                    })
 
-                msg_attach = translate(
-                    user['language_code'],
-                    'msg_deal_attachment'
-                ).format(**{
-                    "id": deal['id'],
-                    "text": escape_markdown(data['message'])
-                })
+                    if data['content_type'] == 'text':
+                        bot.send_message(config['notifications_deal_chat_id'], msg_attach, reply_to_message_id=m.message_id, reply_markup=kb)
 
-                if data['content_type'] == 'text':
-                    bot.send_message(config['notifications_deal_chat_id'], msg_attach, reply_to_message_id=m.message_id, reply_markup=kb)
+                    if data['content_type'] == 'photo':
+                        bot.send_photo(config['notifications_deal_chat_id'], data['attach']['data'], caption=msg_attach, reply_to_message_id=m.message_id, reply_markup=kb)
 
-                if data['content_type'] == 'photo':
-                    bot.send_photo(config['notifications_deal_chat_id'], data['attach']['data'], caption=msg_attach, reply_to_message_id=m.message_id, reply_markup=kb)
+                    if data['content_type'] == 'video':
+                        bot.send_video(config['notifications_deal_chat_id'], data['attach']['data'], caption=msg_attach, reply_to_message_id=m.message_id, reply_markup=kb)
 
-                if data['content_type'] == 'video':
-                    bot.send_video(config['notifications_deal_chat_id'], data['attach']['data'], caption=msg_attach, reply_to_message_id=m.message_id, reply_markup=kb)
-
-                if data['content_type'] == 'document':
-                    bot.send_document(config['notifications_deal_chat_id'], data['attach']['data'], caption=msg_attach, reply_to_message_id=m.message_id, reply_markup=kb)
-            except Exception as e:
-                print(e)
-
+                    if data['content_type'] == 'document':
+                        bot.send_document(config['notifications_deal_chat_id'], data['attach']['data'], caption=msg_attach, reply_to_message_id=m.message_id, reply_markup=kb)
+        except Exception as e:
+            print(e)
 
     bot.delete_state(call.from_user.id)
 

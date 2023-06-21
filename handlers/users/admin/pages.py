@@ -206,7 +206,7 @@ def edit_page_text(message):
             'admin_page_edit_home'
         ).format(
             page['page_title'],
-            page['page_content']
+            escape_markdown(page['page_content'])
         )
 
         try:

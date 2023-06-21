@@ -167,6 +167,34 @@ class Database():
                 cursor.execute(update_page_query, params)
                 connection.commit()
 
+    def get_payment_account(self, id, name_id="id"):
+        """ Получает данные о платежном аккаунте
+
+            :slug:    int|str идентификатор/ссылка страницы
+            :name_id: str тип идентификатора (slug/id)
+        """
+        with connect(host=self.host, user=self.user, password=self.password, database=self.db) as connection:
+            with connection.cursor(dictionary=True, buffered=True) as cursor:
+                    select_pa_query = f"""SELECT * FROM payment_accounts WHERE {name_id} = '{id}'"""
+                    cursor.execute(select_pa_query)
+                    return cursor.fetchone()
+
+    def update_payment_account(self, account_id=1, name_id="id", args: dict = {}):
+        """ Обновляем данные о платежном аккаунте
+
+            :account_id: int  идентификатор аккаунта
+            :name_id:    str  тип идентификатора
+            :args:       dict словарь с данными для обновления
+        """
+        sql, params = self.update_format("SET", args)
+        with connect(host=self.host, user=self.user, password=self.password, database=self.db, buffered=True) as connection:
+            update_pa_query = f"""
+             UPDATE payment_accounts {sql} WHERE {name_id} = {account_id}
+            """
+            with connection.cursor() as cursor:
+                cursor.execute(update_pa_query, params)
+                connection.commit()
+
 
     def update_bank(self, bank_id=1, name_id="id", args: dict = {}):
         """ Обновляем данные о банке
@@ -304,14 +332,14 @@ class Database():
                     cursor.execute(select_account_query)
                     return cursor.fetchone()
 
-    def get_deal(self, deal_id):
+    def get_deal(self, deal_id, name_id="id"):
         """ Получает сделку по ID
 
             :deal_id:     int идентификатор сделки
         """
         with connect(host=self.host, user=self.user, password=self.password, database=self.db) as connection:
             with connection.cursor(dictionary=True, buffered=True) as cursor:
-                    select_deal_query = f"""SELECT * FROM deals WHERE id = '{deal_id}'"""
+                    select_deal_query = f"""SELECT * FROM deals WHERE {name_id} = '{deal_id}'"""
                     cursor.execute(select_deal_query)
                     return cursor.fetchone()
 
@@ -528,6 +556,7 @@ class Database():
                 %s, %s, %s,
                 "{datetime.now()}")
              ON DUPLICATE KEY UPDATE
+                status = 'active',
                 account = VALUES(account),
                 user_id = VALUES(user_id),
                 bank_id = VALUES(bank_id);
@@ -548,7 +577,7 @@ class Database():
         with connect(host=self.host, user=self.user, password=self.password, database=self.db) as connection:
             insert_deal_query = f"""
              INSERT INTO deals
-                (user_id,           from_bank_name,
+                (user_id, uid,      from_bank_name,
                 from_name,          from_amount,
                 from_bank_id,       from_payment_account_id,
                 to_name,            to_amount,
@@ -558,7 +587,7 @@ class Database():
                 profit,             calculated_amount,
                 status,             created_at)
              VALUES
-                 ({deals['user_id']},             "{deals['from_bank_name']}", "{deals['from_name']}",          {deals['from_amount']}, "{deals['from_bank_id']}", {deals['from_payment_account_id']}, "{deals['to_name']}",            "{deals['to_amount']}",  "{deals['orig_to_amount']}",     "{deals['to_bank_name']}", "{deals['requisites']}",         "{deals['exchange_rate']}", "{deals['orig_exchange_rate']}", "{deals['spread']}", "{deals.get('profit', 0)}",     "{deals['calculated_amount']}",
+                 ({deals['user_id']}, UPPER(SUBSTR(MD5(RAND()),1,6)), "{deals['from_bank_name']}", "{deals['from_name']}",          {deals['from_amount']}, "{deals['from_bank_id']}", {deals['from_payment_account_id']}, "{deals['to_name']}",            "{deals['to_amount']}",  "{deals['orig_to_amount']}",     "{deals['to_bank_name']}", "{deals['requisites']}",         "{deals['exchange_rate']}", "{deals['orig_exchange_rate']}", "{deals['spread']}", "{deals.get('profit', 0)}",     "{deals['calculated_amount']}",
                  "{deals['status']}",             "{datetime.now()}")
             """
             with connection.cursor() as cursor:

@@ -1,6 +1,7 @@
 from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 from loader import db, me
 from bot_locale.translate import translate
+from datetime import datetime, timedelta
 
 class AdminKeyboard:
     back_inline_keyboard = None
@@ -19,8 +20,7 @@ class AdminKeyboard:
             [InlineKeyboardButton(translate(lang, is_break), callback_data='admin.params_change_techinal_break')],
         ])
 
-        if 'admin' in user['role']:
-            kb.add(InlineKeyboardButton(translate(lang, 'inline_admin_params_exchange'), callback_data='admin.params'))
+        kb.add(InlineKeyboardButton(translate(lang, 'inline_admin_params_exchange'), callback_data='admin.params'))
 
         kb.add(InlineKeyboardButton(translate(lang, 'inline_back_to_main_menu'), callback_data='bot.back_to_main_menu'))
 
@@ -141,6 +141,7 @@ class AdminKeyboard:
         pair_id = str(pair['id'])
         pair_status_string = 'inline_admin_pair_active' if pair['is_active'] == 1 else 'inline_admin_pair_inactive'
         pair_auto_requisites_string = 'inline_admin_pair_auto_requisites_active' if pair['auto_requisites'] == 1 else 'inline_admin_pair_auto_requisites_inactive'
+        pair_verification_account_string = 'inline_admin_pair_verification_account_active' if pair['verification_account'] == 1 else 'inline_admin_pair_verification_account_inactive'
 
         for k, v in params.items():
             kb.add(
@@ -149,6 +150,13 @@ class AdminKeyboard:
                     callback_data=f'admin.params_pair_edit_{k}|{pair_id}'
                 ),
             )
+
+        kb.add(
+            InlineKeyboardButton(
+                translate(lang, pair_verification_account_string),
+                callback_data=f'admin.params_pair_edit_verification_account|{pair_id}'
+            ),
+        )
 
         kb.add(
             InlineKeyboardButton(
@@ -194,6 +202,7 @@ class AdminKeyboard:
         ])
 
         return kb
+
 
     @staticmethod
     def deals(user, deals, callback_data, back_menu=True):
@@ -264,18 +273,22 @@ class AdminKeyboard:
         lang = user['language_code']
         kb = InlineKeyboardMarkup()
 
-
+        kb.row(
+            InlineKeyboardButton(
+                translate(lang, 'inline_admin_search_username_or_uid'),
+                callback_data='admin.search_deal_by_username_or_uid'
+            ),
+        )
         kb.row(
             InlineKeyboardButton(
                 translate(lang, 'inline_admin_search_id'),
                 callback_data='admin.search_deal_by_id'
             ),
         )
-
         kb.row(
             InlineKeyboardButton(
-                translate(lang, 'inline_admin_search_username_or_uid'),
-                callback_data='admin.search_deal_by_username_or_uid'
+                translate(lang, 'inline_admin_search_profile'),
+                callback_data='admin.search_profile'
             ),
         )
 
@@ -494,6 +507,29 @@ class AdminKeyboard:
 
         return kb
 
+    @staticmethod
+    def pagination(user, bank):
+        """ User edit
+        """
+        lang = user['language_code']
+        kb = InlineKeyboardMarkup()
+
+        kb.add(
+            InlineKeyboardButton(
+                translate(lang, 'inline_admin_edit_bank_name'),
+                callback_data='admin.params_bank_edit_name_'+str(bank['id'])
+            )
+        )
+
+        kb.add(
+            InlineKeyboardButton(
+                translate(lang, 'inline_back_to'),
+                callback_data='admin.params_banks'
+            ),
+        )
+
+        return kb
+
 class MenuKeyboard:
     """ Клавиатуры
     """
@@ -507,7 +543,7 @@ class MenuKeyboard:
             InlineKeyboardButton(translate(lang, 'inline_my_exchanges'), callback_data='bot.main.my_exchanges')],
             [InlineKeyboardButton(translate(lang, 'inline_faq'), callback_data='bot.main.page.faq'),
             InlineKeyboardButton(translate(lang, 'inline_support'), callback_data='bot.main.support')],
-            [InlineKeyboardButton(translate(lang, 'inline_affilate_program'), callback_data='bot.main.affilate_program')],
+            # [InlineKeyboardButton(translate(lang, 'inline_affilate_program'), callback_data='bot.main.affilate_program')],
         ])
 
         if user['role'] in ['manager', 'admin']:
@@ -562,6 +598,25 @@ class MenuKeyboard:
                 InlineKeyboardButton(translate(lang, 'inline_exchange_accept_agreement'), callback_data='bot.accept_agreement'),
             ]
         ])
+        return kb
+
+    @staticmethod
+    def object_pagination(current, max, back_menu=True):
+        """ Клавиатура/вперёд/назад/главное меню
+        """
+        kb = InlineKeyboardMarkup()
+
+        if max and current != max:
+            kb.add(InlineKeyboardButton('Вперёд ➡️', callback_data=f'bot.deal_page_{current + 1}'))
+
+        if current <= max and current != 1:
+            kb.add(InlineKeyboardButton('⬅️ Назад', callback_data=f'bot.deal_page_{current - 1}'))
+
+        if back_menu:
+            kb.add(
+                InlineKeyboardButton('◀️ Назад в главное меню', callback_data='bot.back_to_main_menu')
+            )
+
         return kb
 
     @staticmethod
@@ -752,6 +807,41 @@ class MenuKeyboard:
 
         kb.add(
             InlineKeyboardButton(translate(lang, 'inline_back_to'), callback_data='bot.back_to_main_menu')
+        )
+
+        return kb
+
+    @staticmethod
+    def deal(user, deal):
+        """ Кнопки в cделке пользователя
+        """
+        config = db.get_config()
+        lang = user['language_code']
+        kb = InlineKeyboardMarkup()
+        deal_status = translate(lang, 'dict_deal_status')
+
+        if deal['status'] in ['dispute']:
+            dispute_limit_time = timedelta(minutes=config['time_limit_dispute'])
+            last_update = datetime.strptime(
+                (str(deal['updated_at']) or str(deal['created_at'])),
+                '%Y-%m-%d %H:%M:%S'
+            )
+
+            diff = last_update + dispute_limit_time
+            now = diff > datetime.now()
+
+            if now:
+                kb.add(
+                    InlineKeyboardButton(translate(lang, 'inline_deal_open_dispute'), callback_data='bot.deal_open_dispute_'+str(deal['id']))
+                )
+
+        if deal['status'] == 'process':
+            kb.add(
+                InlineKeyboardButton(translate(lang, 'inline_deal_user_deal_paid_'), callback_data='bot.deal_change_status_accept_'+str(deal['id']))
+            )
+
+        kb.add(
+            InlineKeyboardButton(translate(lang, 'inline_back_to'), callback_data='bot.main.my_exchanges')
         )
 
         return kb
