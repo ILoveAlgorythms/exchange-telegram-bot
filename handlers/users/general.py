@@ -1,5 +1,5 @@
 from loader import bot, db, ROOT_DIR
-from bot_locale.translate import translate
+from bot_locale.translate import _
 from keyboards.inline.menu import MenuKeyboard
 from telebot.util import extract_arguments
 from utils.misc.data import cryptoexchange_parse_rate
@@ -27,7 +27,7 @@ def start_handler(message):
     # Очищает любое состояние после вызова команды
     bot.delete_state(message.from_user.id)
 
-    text = translate(user['language_code'], 'start_text')
+    text = _(user['language_code'], 'start_text')
     kb = MenuKeyboard.home(user)
 
     if user['role'] in ['manager', 'admin']:
@@ -36,7 +36,7 @@ def start_handler(message):
         if args.startswith("order"):
             # Открыть сделку
             order_id = args.replace("order", "")
-            text = translate(user['language_code'], 'user_from_notification_view_deal').format(**{
+            text = _(user['language_code'], 'user_from_notification_view_deal').format(**{
                 "id": order_id
             })
             kb = MenuKeyboard.back_to(
@@ -48,7 +48,7 @@ def start_handler(message):
         if args.startswith("ticket"):
             # Открыть тикет
             ticket_id = args.replace("ticket", "")
-            text = translate(user['language_code'], 'user_from_notification_view_ticket').format(**{
+            text = _(user['language_code'], 'user_from_notification_view_ticket').format(**{
                 "id": ticket_id
             })
             kb = MenuKeyboard.back_to(
@@ -86,7 +86,7 @@ def bot_to_main_menu(call):
         bot.edit_message_text(
             chat_id=call.message.chat.id,
             message_id=call.message.message_id,
-            text=translate(user['language_code'], 'start_text'),
+            text=_(user['language_code'], 'start_text'),
             reply_markup=MenuKeyboard.home(user)
         )
     except Exception as e:
@@ -97,7 +97,7 @@ def bot_to_main_menu(call):
         )
         bot.send_message(
             chat_id=call.message.chat.id,
-            text=translate(user['language_code'], 'start_text'),
+            text=_(user['language_code'], 'start_text'),
             reply_markup=MenuKeyboard.home(user)
         )
 
@@ -181,8 +181,8 @@ def deal_page_pagination(call):
     deal_count = db.get_count("deals", sql=f"WHERE user_id = {user['id']}")
 
     pages = ceil(deal_count / limit_per_page)
-    start_limit = 0
-    end_limit = start_limit + limit_per_page
+    start_limit = 0 # default start limit
+    end_limit = start_limit + limit_per_page # default end limit
 
     if current_page != 1:
         start_limit = (current_page - 1) * limit_per_page
@@ -194,8 +194,8 @@ def deal_page_pagination(call):
 
     lang = user['language_code']
 
-    deal_text = translate(lang, 'chapter_my_exchanges')
-    deal_status = translate(lang, 'dict_deal_status')
+    deal_text = _(lang, 'chapter_my_exchanges')
+    deal_status = _(lang, 'dict_deal_status')
     stroke = "\n\n"
 
     for deal in user_deals:
@@ -230,15 +230,16 @@ def bot_main_callback_funcions(call):
 
         lang = user['language_code']
 
-        deal_text = translate(lang, 'chapter_my_exchanges')
-        deal_status = translate(lang, 'dict_deal_status')
+        deal_text = _(lang, 'chapter_my_exchanges')
+        deal_status = _(lang, 'dict_deal_status')
         stroke = "\n\n"
 
-        for deal in user_deals:
-            stroke += f"{deal_status[deal['status']]} {deal['created_at']} /D{deal['uid']}\n{deal['from_amount']} {deal['from_name']} ➡️ {deal['to_amount']} {deal['to_name']}\n\n"
-        else:
-            stroke += translate(lang, 'deals_not_found')
+        if user_deals:
+            for deal in user_deals:
+                stroke += f"{deal_status[deal['status']]} {deal['created_at']} /D{deal['uid']}\n{deal['from_amount']} {deal['from_name']} ➡️ {deal['to_amount']} {deal['to_name']}\n\n"
 
+        if not user_deals:
+            stroke = _(lang, 'deals_not_found')
 
         bot.edit_message_text(
             chat_id=call.message.chat.id,
@@ -249,7 +250,7 @@ def bot_main_callback_funcions(call):
         bot.send_message(
             chat_id=call.message.chat.id,
             text=stroke,
-            reply_markup=MenuKeyboard.object_pagination(1, pages)
+            reply_markup=MenuKeyboard.object_pagination(current_page, pages)
         )
 
     if calldata == 'support':
@@ -259,7 +260,7 @@ def bot_main_callback_funcions(call):
         bot.edit_message_text(
             chat_id=call.message.chat.id,
             message_id=call.message.message_id,
-            text=translate(user['language_code'], 'chapter_support'),
+            text=_(user['language_code'], 'chapter_support'),
             reply_markup=MenuKeyboard.support(user)
         )
 
@@ -288,7 +289,7 @@ def bot_main_callback_funcions(call):
                 document=file,
                 caption=page.get(
                     'page_content',
-                    translate(user['language_code'], 'page_not_found')
+                    _(user['language_code'], 'page_not_found')
                 ),
                 reply_markup=MenuKeyboard.back_to(user)
             )
@@ -300,7 +301,7 @@ def bot_main_callback_funcions(call):
             message_id=call.message.message_id,
             text=page.get(
                 'page_content',
-                translate(user['language_code'], 'page_not_found')
+                _(user['language_code'], 'page_not_found')
             ),
             reply_markup=MenuKeyboard.back_to(user)
         )

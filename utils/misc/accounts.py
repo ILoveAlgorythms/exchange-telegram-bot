@@ -17,13 +17,13 @@ def get_payment_account(pair: dict = {}, bank_id: int = 1) -> dict:
 
         :pair: пара
     """
-    min_sum = float('inf')
-    min_uses = float('inf')
-    chosen_card = {}
-
     # Получаем информацию по доступным картам
     from loader import db
     card_list = db.get_view("accounts_information_per_day")
+
+    min_sum = float('inf')
+    min_uses = float('inf')
+    chosen_card = {}
 
     # Выбираем аккаунт, который использовался раньше всех
     # или вообще не использовался (NULL) за текущие сутки (с 00:00:00)
@@ -49,35 +49,35 @@ def get_payment_account(pair: dict = {}, bank_id: int = 1) -> dict:
 
     return chosen_card
 
-def account_parse_from_string(cards):
+def account_parse_from_string(accounts, min_account_length=5, min_account_length_info=5, min_account_limit=0):
     """ Парсит счета из строки
 
-       :card: строка с картами
+       :account: строка с аккаунтами
     """
-    cards = cards.split('\n')
+    accounts = accounts.split('\n')
 
     data = []
     errors = []
 
-    for card in cards:
+    for account in accounts:
         try:
-            card = re.split(", |,", card)
+            account = re.split(", |,", account)
 
             if (
-                len(card[0]) < 5 or
-                len(card[1]) < 5 or
-                float(card[2]) <= 0
+                len(account[0]) < min_account_length or
+                len(account[1]) < min_account_length_info or
+                float(account[2]) <= min_account_limit
             ):
-                errors.append(card)
+                errors.append(account)
                 continue
 
             data.append({
-                'account': card[0],
-                'account_info': card[1],
-                'account_limit': card[2],
+                'account': account[0],
+                'account_info': account[1],
+                'account_limit': account[2],
             })
         except Exception as e:
-            errors.append(card)
+            errors.append(account)
             print(e)
 
     return data, errors

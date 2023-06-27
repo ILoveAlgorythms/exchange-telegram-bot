@@ -1,6 +1,6 @@
 from loader import bot, db
 from states.states import ExchageState
-from bot_locale.translate import translate
+from bot_locale.translate import _
 from keyboards.inline.menu import AdminKeyboard, MenuKeyboard
 from telebot.util import extract_arguments, escape
 from telebot.formatting import escape_markdown
@@ -22,7 +22,7 @@ def profile_handler(message):
     args = extract_arguments(message.text)
 
     if not args:
-        bot.send_message(message.from_user.id, translate(lang, 'incorrect_arguments').format(message.text))
+        bot.send_message(message.from_user.id, _(lang, 'incorrect_arguments').format(message.text))
         return
 
 
@@ -92,31 +92,31 @@ def set_admin(message):
     if argument is None:
         bot.send_message(
             message.from_user.id,
-            translate(user['language_code'], 'admin_data_parameters_not_found')
+            _(user['language_code'], 'admin_data_parameters_not_found')
         )
         return
 
     if search_user is None:
         bot.send_message(
             message.from_user.id,
-            translate(user['language_code'], 'admin_search_user_not_found')
+            _(user['language_code'], 'admin_search_user_not_found')
         )
         return
 
     if user['id'] == search_user['id']:
         bot.send_message(
             message.from_user.id,
-            translate(user['language_code'], 'admin_cant_ban_yourself')
+            _(user['language_code'], 'admin_cant_ban_yourself')
         )
         return
 
     if search_user['is_admin'] == 1:
         db.update_user(search_user['telegram_id'], args={'role': 'user'})
-        msg = translate(user['language_code'], 'admin_user_is_not_admin').format(search_user['telegram_id'], escape_markdown(search_user['username']))
+        msg = _(user['language_code'], 'admin_user_is_not_admin').format(search_user['telegram_id'], escape_markdown(search_user['username']))
 
     if search_user['is_admin'] == 0:
         db.update_user(search_user['telegram_id'], args={'role': 'admin'})
-        msg = translate(user['language_code'], 'admin_user_is_admin').format(search_user['telegram_id'], escape_markdown(search_user['username']))
+        msg = _(user['language_code'], 'admin_user_is_admin').format(search_user['telegram_id'], escape_markdown(search_user['username']))
 
     bot.send_message(
         message.from_user.id,
@@ -142,24 +142,24 @@ def admin_home(message):
     if argument is None:
         bot.send_message(
             message.from_user.id,
-            translate(user['language_code'], 'admin_data_parameters_not_found')
+            _(user['language_code'], 'admin_data_parameters_not_found')
         )
         return
 
     if search_user is None:
         bot.send_message(
             message.from_user.id,
-            translate(user['language_code'], 'admin_search_user_not_found')
+            _(user['language_code'], 'admin_search_user_not_found')
         )
         return
 
     if search_user['is_banned'] == 1:
         db.update_user(search_user['telegram_id'], args={'is_banned': 0})
-        msg = translate(user['language_code'], 'admin_user_is_unban').format(search_user['telegram_id'], escape_markdown(search_user['username']))
+        msg = _(user['language_code'], 'admin_user_is_unban').format(search_user['telegram_id'], escape_markdown(search_user['username']))
 
     if search_user['is_banned'] == 0:
         db.update_user(search_user['telegram_id'], args={'is_banned': 1})
-        msg = translate(user['language_code'], 'admin_user_is_banned').format(search_user['telegram_id'], escape_markdown(search_user['username']))
+        msg = _(user['language_code'], 'admin_user_is_banned').format(search_user['telegram_id'], escape_markdown(search_user['username']))
 
     bot.send_message(
         message.from_user.id,
@@ -183,7 +183,7 @@ def admin_open_tickets(call):
     bot.edit_message_text(
         chat_id=call.message.chat.id,
         message_id=call.message.message_id,
-        text=translate(user['language_code'], 'admin_tickets_home'),
+        text=_(user['language_code'], 'admin_tickets_home'),
         reply_markup=AdminKeyboard.tickets(user, tickets, callback_data_admin_work_open_ticket)
     )
 
@@ -205,7 +205,7 @@ def admin_change_technical_break(call):
     bot.edit_message_text(
         chat_id=call.message.chat.id,
         message_id=call.message.message_id,
-        text=translate(user['language_code'], status[config['technical_break']][0]),
+        text=_(user['language_code'], status[config['technical_break']][0]),
         reply_markup=MenuKeyboard.back_to(
             user,
             data=callback_data_admin_back_to_home,

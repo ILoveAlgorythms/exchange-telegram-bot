@@ -29,9 +29,9 @@ class Database():
                         if line.rstrip() != '':
                             cursor.execute(line)
 
+                print("Импортирую базу данных...")
                 # Отправляем транзакцию
                 connection.commit()
-
                 print("База данных успешно импортирована.")
 
             except Warning as warn:
@@ -308,6 +308,18 @@ class Database():
             with connection.cursor(dictionary=True, buffered=True) as cursor:
                     select_deals_query = f"""SELECT * FROM deals WHERE {name_id} IN ({data}) {sql} ORDER BY id {order_by} LIMIT {start_limit}, {end_limit}"""
                     cursor.execute(select_deals_query)
+                    return cursor.fetchall()
+
+    def get_accounts(self, data, name_id="bank_id", sql='', start_limit=0, end_limit=1, order_by="DESC"):
+        """ Получает список аккаунтов банка
+
+        """
+        with connect(host=self.host, user=self.user, password=self.password, database=self.db) as connection:
+            if type(data) == list:
+                data = ", ".join((f"'{i}'" for i in data))
+            with connection.cursor(dictionary=True, buffered=True) as cursor:
+                    select_accounts_query = f"""SELECT * FROM payment_accounts WHERE {name_id} IN ({data}) {sql} ORDER BY id {order_by} LIMIT {start_limit}, {end_limit}"""
+                    cursor.execute(select_accounts_query)
                     return cursor.fetchall()
 
     def get_view(self, view_name):

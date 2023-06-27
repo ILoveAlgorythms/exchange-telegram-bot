@@ -11,9 +11,12 @@ from .admin import (
 )
 from . import (
     general as user_general,
+    affilate_program,
     exchange,
     chat,
     support,
     disput_deal,
     undefined # ставить всегда последним в списке
 )
+
+# from . import exchange

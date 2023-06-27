@@ -1,6 +1,6 @@
 from loader import bot, db
 from states.states import AdminDeal
-from bot_locale.translate import translate
+from bot_locale.translate import _
 from utils.message_templates import get_admin_deal_text, get_requisites_text
 from keyboards.inline.menu import AdminKeyboard, MenuKeyboard
 from telebot.formatting import escape_markdown
@@ -62,7 +62,7 @@ def admin_open_work_order(call):
     ):
         bot.answer_callback_query(
             call.id,
-            translate(user['language_code'], 'warning_deal_manager_is_exists')
+            _(user['language_code'], 'warning_deal_manager_is_exists')
         )
         return
 
@@ -71,7 +71,7 @@ def admin_open_work_order(call):
         deal['status'] = 'accepted'
         deal['manager_id'] = user['id']
         try:
-            deal_text = translate(
+            deal_text = _(
                 user_deal['language_code'],
                 'deal_accepted_manager'
             ).format(
@@ -87,7 +87,7 @@ def admin_open_work_order(call):
         db.create_dialog(
             user_deal['id'],
             deal_id=deal['id'],
-            title=translate(
+            title=_(
                 user_deal['language_code'],
                 'msg_deal'
             ).format(**{
@@ -107,15 +107,19 @@ def admin_open_work_order(call):
         deal['status'] = 'declined'
         deal['manager_id'] = user['id']
         try:
-            deal_text = translate(
+            deal_text = _(
                 user_deal['language_code'],
                 'deal_declined_manager'
             ).format(
                 deal['id']
             )
+            srting_back_to = _(user_deal['language_code'], 'inline_back_to_main_menu')
             bot.send_message(
                 user_deal['telegram_id'],
-                text=deal_text
+                text=deal_text,
+                reply_markup=MenuKeyboard.smart({
+                    srting_back_to: {'callback_data': 'bot.back_to_main_menu'}
+                })
             )
         except Exception as e:
             pass
@@ -147,7 +151,7 @@ def admin_open_work_order(call):
                 default=str
             )
 
-        send_requisites = translate(
+        send_requisites = _(
             user['language_code'],
             'admin_deal_send_requisites'
         ).format(**{
@@ -171,7 +175,7 @@ def admin_open_work_order(call):
         deal['status'] = 'completed'
         deal['manager_id'] = user['id']
         try:
-            deal_completed_text = translate(
+            deal_completed_text = _(
                 user_deal['language_code'],
                 'deal_completed_user'
             ).format(**{
@@ -181,10 +185,10 @@ def admin_open_work_order(call):
                 "to_amount": deal['to_amount'],
             })
 
-            string_view_deal = translate(lang_user_deal, 'inline_deal_view_deal')
-            string_open_dusput_deal = translate(lang_user_deal, 'inline_deal_open_dispute')
-            string_open_main_menu = translate(lang_user_deal, 'inline_back_to_main_menu')
-            string_crate_new_exchange = translate(lang_user_deal, 'inline_create_new_exchange')
+            string_view_deal = _(lang_user_deal, 'inline_deal_view_deal')
+            string_open_dusput_deal = _(lang_user_deal, 'inline_deal_open_dispute')
+            string_open_main_menu = _(lang_user_deal, 'inline_back_to_main_menu')
+            string_crate_new_exchange = _(lang_user_deal, 'inline_create_new_exchange')
 
             bot.send_message(
                 user_deal['telegram_id'],
@@ -217,7 +221,7 @@ def send_requisites(message):
         deal = json.loads(data['deal'])
         user = json.loads(data['user'])
         data['requisites'] = json.dumps(message.text)
-        confirmation_send_requisites = translate(
+        confirmation_send_requisites = _(
             user['language_code'],
             'user_deal_send_requisites_confirmation'
         ).format(
@@ -245,7 +249,7 @@ def send_requisites(call):
         bot.edit_message_text(
             chat_id=call.message.chat.id,
             message_id=call.message.message_id,
-            text=translate(user['language_code'], 'user_deal_send_requisites_success'),
+            text=_(user['language_code'], 'user_deal_send_requisites_success'),
             reply_markup=MenuKeyboard.back_to(
                 user,
                 data=(callback_data_admin_work_open_deal+str(deal['id'])),
@@ -320,7 +324,7 @@ def callback_data_open_chat(call):
     bot.edit_message_text(
         message_id=call.message.message_id,
         chat_id=call.message.chat.id,
-        text=translate(
+        text=_(
             user['language_code'],
             'deal_chat_start'
         ).format(**{
@@ -362,7 +366,7 @@ def not_supported_message(message):
         deal = json.loads(data['deal'])
         bot.send_message(
             message.from_user.id,
-            translate(user['language_code'], 'deal_file_not_supported')
+            _(user['language_code'], 'deal_file_not_supported')
         )
 
 @bot.message_handler(is_chat=False, state=AdminDeal.chat, content_types=['text', 'photo', 'video', 'document'])
@@ -392,7 +396,7 @@ def set_message(message):
         try:
             new_message = bot.send_message(
                 chat_id=message.chat.id,
-                text=translate(user['language_code'], 'user_deal_add_data_success'),
+                text=_(user['language_code'], 'user_deal_add_data_success'),
                 reply_markup=MenuKeyboard.accept_or_decline(
                     user,
                     cl_accept=callback_data_deal_send_message,
@@ -432,7 +436,7 @@ def accept_send_message(call):
             )
             bot.send_message(
                 chat_id=call.message.chat.id,
-                text=translate(
+                text=_(
                     user['language_code'],
                     'deal_chat_send_message_success'
                 ),
@@ -464,7 +468,7 @@ def accept_send_message(call):
 
             key_string = 'msg_chat_deal_disput_manager' if deal['status'] == 'dispute' else 'msg_chat_deal_manager'
 
-            msg_attach = translate(
+            msg_attach = _(
                 user['language_code'],
                 key_string
             ).format(**{
@@ -512,7 +516,7 @@ def admin_set_profit(call):
             sort_keys=True,
             default=str
         )
-        profit_text = translate(
+        profit_text = _(
             user['language_code'],
             'admin_deal_set_profit'
         ).format(
@@ -562,7 +566,7 @@ def save_profit_or_decline(message):
         if profit <= 0 or profit > deal['from_amount'] or profit_input_asset not in assets:
             bot.send_message(
                 chat_id=message.chat.id,
-                text=translate(user['language_code'], 'error_data_not_valid'),
+                text=_(user['language_code'], 'error_data_not_valid'),
                 reply_markup=kb
             )
             return
@@ -573,7 +577,7 @@ def save_profit_or_decline(message):
         )
         bot.send_message(
             chat_id=message.chat.id,
-            text=translate(user['language_code'], 'admin_deal_profit_fixed'),
+            text=_(user['language_code'], 'admin_deal_profit_fixed'),
             reply_markup=kb
         )
 

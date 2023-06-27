@@ -1,6 +1,6 @@
 from loader import bot, db, ROOT_DIR
 from states.states import EditPage
-from bot_locale.translate import translate
+from bot_locale.translate import _
 from keyboards.inline.menu import AdminKeyboard, MenuKeyboard
 from telebot.formatting import escape_markdown
 import json
@@ -24,7 +24,7 @@ def admin_pages_list(call):
     bot.edit_message_text(
         chat_id=call.message.chat.id,
         message_id=call.message.message_id,
-        text=translate(user['language_code'], 'admin_page_home'),
+        text=_(user['language_code'], 'admin_page_home'),
         reply_markup=AdminKeyboard.pages(user, pages)
     )
 
@@ -39,7 +39,7 @@ def admin_preview_page(call):
     if page['document'] == 'null':
         pass
 
-    edit_page_text = translate(
+    edit_page_text = _(
         user['language_code'],
         'admin_page_edit_home'
     ).format(
@@ -70,14 +70,14 @@ def admin_edit_page(call):
         data['message_id'] = call.message.message_id
         data['page_id'] = page['id']
 
-    edit_page_text = translate(
+    edit_page_text = _(
         user['language_code'],
         'admin_page_edit_tmp'
     )
     bot.edit_message_text(
         chat_id=call.message.chat.id,
         message_id=call.message.message_id,
-        text=translate(user['language_code'], 'admin_page_edit_text').format(page['page_title']),
+        text=_(user['language_code'], 'admin_page_edit_text').format(page['page_title']),
         reply_markup=MenuKeyboard.back_to(user, key_string='inline_back_to', data=callback_data_admin_preview_page+str(page['id']))
     )
 
@@ -94,7 +94,7 @@ def admin_delete_document_page(call):
     bot.edit_message_text(
         chat_id=call.message.chat.id,
         message_id=call.message.message_id,
-        text=translate(user['language_code'], 'admin_page_document_deleted').format(page['page_title']),
+        text=_(user['language_code'], 'admin_page_document_deleted').format(page['page_title']),
         reply_markup=MenuKeyboard.back_to(user, key_string='inline_back_to', data=callback_data_admin_preview_page+str(page['id']))
     )
 
@@ -117,14 +117,14 @@ def admin_add_document_page(call):
             default=str
         )
 
-    edit_page_text = translate(
+    edit_page_text = _(
         user['language_code'],
         'admin_page_edit_tmp'
     )
     bot.edit_message_text(
         chat_id=call.message.chat.id,
         message_id=call.message.message_id,
-        text=translate(user['language_code'], 'admin_page_add_document').format(page['page_title']),
+        text=_(user['language_code'], 'admin_page_add_document').format(page['page_title']),
         reply_markup=MenuKeyboard.back_to(user, key_string='inline_back_to', data=callback_data_admin_preview_page+str(page['id']))
     )
 
@@ -139,7 +139,7 @@ def not_supported_message(message):
     with bot.retrieve_data(message.from_user.id) as data:
         bot.send_message(
             message.from_user.id,
-            translate(user['language_code'], 'deal_file_not_supported')
+            _(user['language_code'], 'deal_file_not_supported')
         )
 
 
@@ -176,7 +176,7 @@ def not_supported_message(message):
 
         bot.send_message(
             message.from_user.id,
-            translate(
+            _(
                 user['language_code'],
                 'admin_page_document_attached'
             ).format(
@@ -201,7 +201,7 @@ def edit_page_text(message):
 
         # Получаем актуальные данные и возвращаем в админку
         page = db.get_page(data['page_id'], name_id="id")
-        edit_page_text = translate(
+        edit_page_text = _(
             user['language_code'],
             'admin_page_edit_home'
         ).format(
@@ -219,7 +219,7 @@ def edit_page_text(message):
 
         bot.send_message(
             chat_id=message.chat.id,
-            text=translate(user['language_code'], 'admin_page_success_edit').format(page['page_title'])
+            text=_(user['language_code'], 'admin_page_success_edit').format(page['page_title'])
         )
         bot.send_message(
             chat_id=message.chat.id,

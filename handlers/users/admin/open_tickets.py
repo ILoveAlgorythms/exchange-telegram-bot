@@ -1,6 +1,6 @@
 from loader import bot, db
 from states.states import AdminDeal, AdminTicket
-from bot_locale.translate import translate
+from bot_locale.translate import _
 from utils.message_templates import get_admin_deal_text
 from keyboards.inline.menu import AdminKeyboard, MenuKeyboard
 from telebot.formatting import escape_markdown, escape_html
@@ -32,8 +32,8 @@ def admin_open_work_order(call):
     if messages != []:
         msg_text = escape_html(escape_markdown(messages[0]['text']))
 
-    ticket_status = translate(user['language_code'], 'dict_ticket_status')
-    ticket_view = translate(
+    ticket_status = _(user['language_code'], 'dict_ticket_status')
+    ticket_view = _(
         user['language_code'],
         'admin_ticket_view'
     ).format(**{
@@ -67,11 +67,11 @@ def admin_ticket_change_status(call):
         return
 
     ticket['status'] = params[0]
-    ticket_status = translate(
+    ticket_status = _(
         user['language_code'],
         'dict_ticket_status'
     )
-    ticket_view = translate(
+    ticket_view = _(
         user['language_code'],
         'admin_ticket_update'
     ).format(**{
@@ -124,7 +124,7 @@ def admin_ticket_open_chat(call):
     bot.edit_message_text(
         message_id=call.message.message_id,
         chat_id=call.message.chat.id,
-        text=translate(
+        text=_(
             user['language_code'],
             'ticket_chat_start'
         ).format(**{
@@ -172,7 +172,7 @@ def not_supported_message(message):
         deal = json.loads(data['deal'])
         bot.send_message(
             message.from_user.id,
-            translate(user['language_code'], 'deal_file_not_supported')
+            _(user['language_code'], 'deal_file_not_supported')
         )
 
 @bot.message_handler(is_chat=False, state=AdminTicket.chat, content_types=['text', 'photo', 'video', 'document'])
@@ -202,7 +202,7 @@ def set_message(message):
         try:
             new_message = bot.send_message(
                 chat_id=message.chat.id,
-                text=translate(user['language_code'], 'user_deal_add_data_success'),
+                text=_(user['language_code'], 'user_deal_add_data_success'),
                 reply_markup=MenuKeyboard.accept_or_decline(
                     user,
                     cl_accept=callback_data_admin_ticket_open_chat_send,
@@ -237,7 +237,7 @@ def accept_send_message(call):
             )
             bot.send_message(
                 chat_id=call.message.chat.id,
-                text=translate(
+                text=_(
                     user['language_code'],
                     'ticket_chat_send_message_success'
                 ),
@@ -264,7 +264,7 @@ def accept_send_message(call):
             user_ticket_tid = user_ticket['telegram_id']
             key_string = 'msg_chat_ticket_manager'
 
-            msg_attach = translate(
+            msg_attach = _(
                 user['language_code'],
                 key_string
             ).format(**{

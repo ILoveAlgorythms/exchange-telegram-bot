@@ -6,7 +6,7 @@ from utils.message_templates import get_admin_deal_text
 from states.states import ExchageState, UserDeal
 from keyboards.inline.menu import MenuKeyboard
 from telebot.formatting import escape_markdown
-from bot_locale.translate import translate
+from bot_locale.translate import _
 from loader import bot, db, config
 from datetime import datetime, timedelta
 import json
@@ -37,7 +37,7 @@ def open_dispute_deal(call):
     if exceed_time(config, deal['updated_at']) == False:
         bot.answer_callback_query(
             call.id,
-            translate(user['language_code'], 'dispute_not_available'),
+            _(user['language_code'], 'dispute_not_available'),
             show_alert=True
         )
         return
@@ -48,14 +48,14 @@ def open_dispute_deal(call):
     ):
         bot.answer_callback_query(
             call.id,
-            translate(user['language_code'], 'deal_not_available'),
+            _(user['language_code'], 'deal_not_available'),
             show_alert=True
         )
         return
 
     bot.send_message(
         chat_id=call.message.chat.id,
-        text=translate(
+        text=_(
             user['language_code'],
             'deal_create_disput_start'
         ).format(**{
@@ -91,7 +91,7 @@ def not_supported_message(message):
         deal = json.loads(data['deal'])
         bot.send_message(
             message.from_user.id,
-            translate(user['language_code'], 'deal_file_not_supported')
+            _(user['language_code'], 'deal_file_not_supported')
         )
 
 @bot.message_handler(is_chat=False, state=UserDeal.dispute, content_types=['text', 'photo', 'video', 'document'])
@@ -125,7 +125,7 @@ def set_message(message):
         try:
             new_message = bot.send_message(
                 chat_id=message.chat.id,
-                text=translate(user['language_code'], 'user_deal_add_data_success'),
+                text=_(user['language_code'], 'user_deal_add_data_success'),
                 reply_markup=MenuKeyboard.accept_or_decline(
                     user,
                     cl_accept=callback_data_deal_create_disput,
@@ -164,7 +164,7 @@ def bot_to_main_menu(call):
             )
             bot.send_message(
                 chat_id=call.message.chat.id,
-                text=translate(
+                text=_(
                     user['language_code'],
                     'deal_create_disput_data_created'
                 ).format(**{
@@ -189,7 +189,7 @@ def bot_to_main_menu(call):
                 kb = MenuKeyboard.notification_deal(user, deal['id'])
                 m = bot.send_message(
                     chat_id=config['notifications_deal_chat_id'],
-                    text=translate(
+                    text=_(
                         user['language_code'],
                         'deal_create_disput_data_created_notification'
                     ).format(**{
@@ -202,7 +202,7 @@ def bot_to_main_menu(call):
                     # Если ничего не заполнено, не отправляем аттачи
                     return
 
-                msg_attach = translate(
+                msg_attach = _(
                     user['language_code'],
                     'msg_deal_attachment'
                 ).format(**{

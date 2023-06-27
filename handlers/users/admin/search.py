@@ -1,6 +1,6 @@
 from loader import bot, db
 from states.states import AdminDealSearch
-from bot_locale.translate import translate
+from bot_locale.translate import _
 from keyboards.inline.menu import AdminKeyboard, MenuKeyboard
 from telebot.formatting import escape_markdown, escape_html
 from utils.message_templates import get_admin_deal_text
@@ -21,7 +21,7 @@ def admin_search(call):
     bot.edit_message_text(
         chat_id=call.message.chat.id,
         message_id=call.message.message_id,
-        text=translate(user['language_code'], 'admin_search_home'),
+        text=_(user['language_code'], 'admin_search_home'),
         reply_markup=AdminKeyboard.search(user)
     )
 
@@ -35,11 +35,11 @@ def admin_search(call):
     msg = "Empty"
 
     if calldata == 'by_id':
-        msg = translate(user['language_code'], 'admin_search_by_id_home')
+        msg = _(user['language_code'], 'admin_search_by_id_home')
         bot.set_state(call.from_user.id, AdminDealSearch.by_id)
 
     if calldata == 'by_username_or_uid':
-        msg = translate(user['language_code'], 'admin_search_by_user_deals_home')
+        msg = _(user['language_code'], 'admin_search_by_user_deals_home')
         bot.set_state(call.from_user.id, AdminDealSearch.uid_or_uname)
 
     bot.edit_message_text(
@@ -67,7 +67,7 @@ def search_deal_by_id(message):
         # Если сделка не нашлась
         bot.send_message(
             message.from_user.id,
-            text=translate(lang, 'admin_search_deal_not_found'),
+            text=_(lang, 'admin_search_deal_not_found'),
             reply_markup=MenuKeyboard.back_to(
                 user,
                 key_string='inline_back_to',
@@ -104,13 +104,13 @@ def search_deal_by_uid_or_uname(message):
     text = ""
 
     if user_deal is None:
-        text = translate(lang, 'admin_search_user_not_found')
+        text = _(lang, 'admin_search_user_not_found')
 
     if user_deal is not None:
         deals = db.get_deals(data=user_deal['id'])
 
     if user_deal is not None and deals == []:
-        text = translate(
+        text = _(
             lang,
             'admin_search_deals_not_found'
         ).format(**{
@@ -131,7 +131,7 @@ def search_deal_by_uid_or_uname(message):
         )
         return
 
-    text = translate(
+    text = _(
         lang,
         'admin_search_deals_found'
     ).format(**{

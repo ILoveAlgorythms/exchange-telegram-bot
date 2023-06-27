@@ -1,10 +1,13 @@
 from loader import bot, db, ROOT_DIR
-from bot_locale.translate import translate
+from bot_locale.translate import _
 from keyboards.inline.menu import MenuKeyboard
 from telebot.formatting import escape_markdown
 import json
 
 def page_send_message(chat_id, user, page, kb=None):
+    """ Отпрвляет страницу
+        с файлом или без
+    """
     if page.get("document") != "null":
         document = json.loads(page['document'])
         file = document['file_id']
@@ -19,7 +22,7 @@ def page_send_message(chat_id, user, page, kb=None):
             document=file,
             caption=escape_markdown(page.get(
                 'page_content',
-                translate(user['language_code'], 'page_not_found')
+                _(user['language_code'], 'page_not_found')
             )),
             reply_markup=kb
         )
@@ -30,7 +33,7 @@ def page_send_message(chat_id, user, page, kb=None):
         chat_id=chat_id,
         text=escape_markdown(page.get(
             'page_content',
-            translate(user['language_code'], 'page_not_found')
+            _(user['language_code'], 'page_not_found')
         )),
         reply_markup=kb
     )

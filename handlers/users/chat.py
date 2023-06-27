@@ -1,6 +1,6 @@
 from loader import bot, db
 from states.states import ExchageState
-from bot_locale.translate import translate
+from bot_locale.translate import _
 from keyboards.inline.menu import ChatKeyboard
 
 callback_data_switc_notifications = 'admin.chat.notifications_switch_'
@@ -15,9 +15,9 @@ def chat_home(message):
     user = db.get_user(message.from_user.id)
     config = db.get_config()
     chat_id = message.chat.id
-    status_text = translate(user['language_code'], 'dict_notifications_status')
+    status_text = _(user['language_code'], 'dict_notifications_status')
 
-    bot.send_message(message.chat.id, translate(user['language_code'], 'chat_home_notifications'), reply_markup=ChatKeyboard.home(user, message.chat.id, config))
+    bot.send_message(message.chat.id, _(user['language_code'], 'chat_home_notifications'), reply_markup=ChatKeyboard.home(user, message.chat.id, config))
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith(callback_data_switc_notifications), is_chat=True, role=['admin'])
 def chat_notifications_switcher(call):
@@ -39,7 +39,7 @@ def chat_notifications_switcher(call):
             try:
                 bot.send_message(
                     config['notifications_deal_chat_id'],
-                    translate(user['language_code'], 'chat_swith_disabled_notify_deals')
+                    _(user['language_code'], 'chat_swith_disabled_notify_deals')
                 )
                 # Выходим из группы
                 bot.leave_chat(
@@ -55,7 +55,7 @@ def chat_notifications_switcher(call):
         # Сообщаем об успешном изменении
         bot.answer_callback_query(
             call.id,
-            text=translate(user['language_code'], 'chat_swith_notify_deals'),
+            text=_(user['language_code'], 'chat_swith_notify_deals'),
             show_alert=True,
         )
 
@@ -70,7 +70,7 @@ def chat_notifications_switcher(call):
             try:
                 bot.send_message(
                     config['notifications_support_chat_id'],
-                    translate(user['language_code'], 'chat_swith_disabled_notify_support')
+                    _(user['language_code'], 'chat_swith_disabled_notify_support')
                 )
                 # Выходим из группы
                 bot.leave_chat(
@@ -86,7 +86,7 @@ def chat_notifications_switcher(call):
         # Сообщаем об успешном изменении
         bot.answer_callback_query(
             call.id,
-            text=translate(user['language_code'], 'chat_swith_notify_support'),
+            text=_(user['language_code'], 'chat_swith_notify_support'),
             show_alert=True,
         )
 

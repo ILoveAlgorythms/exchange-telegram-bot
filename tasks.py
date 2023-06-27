@@ -4,6 +4,7 @@ from loader import bot, db
 from datetime import datetime
 from bot_locale.translate import translate
 from utils.misc.data import cryptoexchange_parse_rate
+from keyboards.inline.menu import MenuKeyboard
 
 def exceed_time_deal():
     """ Ищет просроченные сделки на n-минут,
@@ -40,16 +41,20 @@ def exceed_time_deal():
                 {'status': 'declined'}
             )
 
+            srting_back_to = _(user_deal['language_code'], 'inline_back_to_main_menu')
+
             msg = translate(
                 user['language_code'],
                 'deal_system_canceled'
             ).format(**{
                 "id": deal['id']
             })
-
             bot.send_message(
                 chat_id=user['telegram_id'],
-                text=msg
+                text=msg,
+                reply_markup=MenuKeyboard.smart({
+                    srting_back_to: {'callback_data': 'bot.back_to_main_menu'}
+                })
             )
 
             print(f"[{datetime.now()}] Сделка №{deal['id']} отменена системой")

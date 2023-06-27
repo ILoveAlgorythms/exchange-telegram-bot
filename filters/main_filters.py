@@ -1,6 +1,6 @@
 from telebot.custom_filters import SimpleCustomFilter, AdvancedCustomFilter
 from telebot.types import Message, CallbackQuery
-from bot_locale.translate import translate
+from bot_locale.translate import _
 from keyboards.inline.menu import MenuKeyboard
 from loader import bot, db
 
@@ -17,10 +17,10 @@ class Role(AdvancedCustomFilter):
 
         if user['role'] not in roles:
             if type(message) == CallbackQuery:
-                bot.answer_callback_query(message.id, translate(lang, 'access_denied'), show_alert=True)
+                bot.answer_callback_query(message.id, _(lang, 'access_denied'), show_alert=True)
 
             if type(message) == Message:
-                bot.send_message(message.chat.id, translate(lang, 'access_denied'))
+                bot.send_message(message.chat.id, _(lang, 'access_denied'))
 
         return user['role'] in roles
 
@@ -59,7 +59,7 @@ class IsCancelAction(SimpleCustomFilter):
     def check(message: Message):
         telegram_id = message.from_user.id
         user = db.get_user(message.from_user.id)
-        reply_cancel = translate(user['language_code'], 'reply_exchange_cancel')
+        reply_cancel = _(user['language_code'], 'reply_exchange_cancel')
 
         if user and message.text in [reply_cancel]:
             # Если есть совпадение, удаляем состояние
@@ -67,13 +67,13 @@ class IsCancelAction(SimpleCustomFilter):
 
             mid_cancel_action = bot.send_message(
                 message.from_user.id,
-                translate(user['language_code'], 'bot_reply_cancel_action'),
+                _(user['language_code'], 'bot_reply_cancel_action'),
                 reply_markup=MenuKeyboard.remove_reply()
             )
 
             bot.send_message(
                 chat_id=telegram_id,
-                text=translate(user['language_code'], 'start_text'),
+                text=_(user['language_code'], 'start_text'),
                 reply_markup=MenuKeyboard.home(user)
             )
 

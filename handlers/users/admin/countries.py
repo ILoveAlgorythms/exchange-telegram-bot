@@ -1,6 +1,6 @@
 from loader import bot, db
 from states.states import EditCountry, CreateCountry
-from bot_locale.translate import translate
+from bot_locale.translate import _
 from keyboards.inline.menu import AdminKeyboard, MenuKeyboard
 from telebot.formatting import escape_markdown
 import json
@@ -25,7 +25,7 @@ def admin_countries_list(call):
     bot.edit_message_text(
         chat_id=call.message.chat.id,
         message_id=call.message.message_id,
-        text=translate(user['language_code'], 'admin_page_countries'),
+        text=_(user['language_code'], 'admin_page_countries'),
         reply_markup=AdminKeyboard.countries(
             user,
             countries,
@@ -47,7 +47,7 @@ def admin_preview_country(call):
     if country is None:
         return
 
-    edit_page_text = translate(
+    edit_page_text = _(
         user['language_code'],
         'admin_country_edit_home'
     ).format(
@@ -86,7 +86,7 @@ def admin_edit_country(call):
         'slug': 'admin_page_edit_country_code',
     }
 
-    edit_page_text = translate(
+    edit_page_text = _(
         user['language_code'],
         key_lang_string[parameter]
     ).format(
@@ -113,7 +113,7 @@ def edit_country_param(message):
 
             # Получаем актуальные данные и возвращаем в админку
             country = db.get_country(data['country_id'], name_id="id")
-            edit_page_text = translate(
+            edit_page_text = _(
                 user['language_code'],
                 'admin_country_edit_home'
             ).format(
@@ -133,7 +133,7 @@ def edit_country_param(message):
 
         bot.send_message(
             chat_id=message.chat.id,
-            text=translate(user['language_code'], 'admin_data_success_edit')
+            text=_(user['language_code'], 'admin_data_success_edit')
         )
         bot.send_message(
             chat_id=message.chat.id,
@@ -160,7 +160,7 @@ def admin_delete_country(call):
     сountry_id = call.data.replace(callback_data_admin_delete_country ,"")
     country = db.get_country(сountry_id, name_id="id")
 
-    delete_country_text = translate(
+    delete_country_text = _(
         user['language_code'],
         'admin_data_country_delete'
     ).format(**country)
@@ -194,7 +194,7 @@ def admin_delete_country_accept(call):
         value=country['id']
     )
 
-    success_delete_country_text = translate(
+    success_delete_country_text = _(
         user['language_code'],
         'admin_data_country_delete_success'
     ).format(**country)
@@ -226,7 +226,7 @@ def admin_create_country(call):
     bot.edit_message_text(
         chat_id=call.message.chat.id,
         message_id=call.message.message_id,
-        text=translate(user['language_code'], 'admin_create_country_name'),
+        text=_(user['language_code'], 'admin_create_country_name'),
         reply_markup=MenuKeyboard.back_to(user, key_string='inline_back_to', data=callback_data_admin_countries)
     )
 
@@ -250,7 +250,7 @@ def admin_create_country_a1(message):
             data['country_name'] = message.text
             bot.send_message(
                 chat_id=message.from_user.id,
-                text=translate(user['language_code'], 'admin_create_country_code')
+                text=_(user['language_code'], 'admin_create_country_code')
             )
         except Exception as e:
             print(e)
@@ -266,7 +266,7 @@ def admin_create_country_a2(message):
         data['country_code'] = message.text
         bot.send_message(
             message.from_user.id,
-            translate(user['language_code'], 'admin_create_country_info').format(data['country_name'], data['country_code']),
+            _(user['language_code'], 'admin_create_country_info').format(data['country_name'], data['country_code']),
             reply_markup=MenuKeyboard.accept_or_decline(
                 user,
                 cl_accept=callback_data_admin_create_country_accept,
@@ -289,7 +289,7 @@ def admin_create_country(call):
         bot.edit_message_text(
             chat_id=call.from_user.id,
             message_id=call.message.message_id,
-            text=translate(user['language_code'], 'admin_create_country_success'),
+            text=_(user['language_code'], 'admin_create_country_success'),
             reply_markup=MenuKeyboard.back_to(
                 user,
                 data=(callback_data_admin_view_country+str(country_id)),

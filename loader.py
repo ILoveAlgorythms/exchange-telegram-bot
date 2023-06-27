@@ -30,7 +30,7 @@ state_storage = telebot.storage.StateRedisStorage(
 )
 
 bot = telebot.TeleBot(
-    token=config['DEFAULT']['token'],
+    token=config['default']['token'],
     state_storage=state_storage,
     parse_mode="Markdown",
     disable_web_page_preview=True,

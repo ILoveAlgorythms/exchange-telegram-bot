@@ -1,9 +1,12 @@
 from .data import cryptoexchange_parse_rate
 
-def add_spread(num, spread):
-    """ Стыкует спред
+def add_spread(amount, spread):
+    """ Стыкует спред c курсом
+
+        :amount: сумма
+        :spread: спред в %
     """
-    return (num - (num * (spread / 100)))
+    return (amount - (amount * (spread / 100)))
 
 def calculate_amount(amount: float = 0, pair: dict = {}, mode: str = 'from') -> dict:
     """ Считает сумму обмена

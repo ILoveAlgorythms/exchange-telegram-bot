@@ -1,6 +1,6 @@
 from loader import bot, db, ROOT_DIR
 from states.states import EditLimit
-from bot_locale.translate import translate
+from bot_locale.translate import _
 from keyboards.inline.menu import AdminKeyboard, MenuKeyboard
 from telebot.formatting import escape_markdown
 import json
@@ -36,7 +36,7 @@ def admin_limits_list(call):
         ["сделка","сделки","сделок"]
     )
 
-    limits_info = translate(lang, 'admin_limits_info').format(**{
+    limits_info = _(lang, 'admin_limits_info').format(**{
         'limit_deals_per': config['limit_deals_per'],
         'limit_deals_per_plural': limit_deals_per_plural,
         'time_limit_deals': config['time_limit_deals'],
@@ -44,9 +44,9 @@ def admin_limits_list(call):
         'dispute_deal_limit': config['time_limit_dispute'],
         'dispute_deal_limit_plural': dispute_deal_limit_plural,
     })
-    string_edit_limit_deals = translate(lang, 'inline_params_limits_edit_deals')
-    string_edit_limit_dispute_deals = translate(lang, 'inline_params_limits_edit_dispute_deals')
-    string_inline_back_to = translate(lang, 'inline_back_to')
+    string_edit_limit_deals = _(lang, 'inline_params_limits_edit_deals')
+    string_edit_limit_dispute_deals = _(lang, 'inline_params_limits_edit_dispute_deals')
+    string_inline_back_to = _(lang, 'inline_back_to')
 
     bot.edit_message_text(
         chat_id=call.message.chat.id,
@@ -79,7 +79,7 @@ def admin_edit_limit(call):
     bot.edit_message_text(
         chat_id=call.message.chat.id,
         message_id=call.message.message_id,
-        text=translate(user['language_code'], key_string),
+        text=_(user['language_code'], key_string),
         reply_markup=MenuKeyboard.back_to(user, key_string='inline_back_to', data=callback_data_admin_limits)
     )
 
@@ -115,10 +115,10 @@ def edit_limit(message):
         except Exception as e:
             pass
 
-        key_string_back_to = translate(user['language_code'], 'inline_back_to')
+        key_string_back_to = _(user['language_code'], 'inline_back_to')
         bot.send_message(
             chat_id=message.chat.id,
-            text=translate(user['language_code'], 'admin_limit_success_edit'),
+            text=_(user['language_code'], 'admin_limit_success_edit'),
             reply_markup=MenuKeyboard.smart({
                 key_string_back_to: {'callback_data': callback_data_admin_limits}
             })

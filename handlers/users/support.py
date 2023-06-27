@@ -2,7 +2,7 @@ import json
 from loader import bot, db, cache
 from utils.misc.data import binance_p2p_arithmetic_mean_data, binance_get_price_pair
 from states.states import SupportState
-from bot_locale.translate import translate
+from bot_locale.translate import _
 from keyboards.inline.menu import MenuKeyboard
 
 callback_data_create_ticket = 'bot.support.create'
@@ -14,14 +14,14 @@ def state_a0(call):
     """ Выбор причины обращения
     """
     user = db.get_user(call.from_user.id)
-    reasons = translate(user['language_code'], 'list_support_request_reasons')
+    reasons = _(user['language_code'], 'list_support_request_reasons')
     is_lock_string = cache_waiting_create_support.format(user['id'])
     is_lock = cache.get(is_lock_string)
 
     if is_lock:
         bot.answer_callback_query(
             call.id,
-            translate(user['language_code'], 'exceed_limit_ticket'),
+            _(user['language_code'], 'exceed_limit_ticket'),
             show_alert=True
         )
         return
@@ -29,7 +29,7 @@ def state_a0(call):
     if user['is_banned'] == 1:
         bot.send_message(
             chat_id=call.from_user.id,
-            text=translate(user['language_code'], 'user_is_banned')
+            text=_(user['language_code'], 'user_is_banned')
         )
         return
 
@@ -40,7 +40,7 @@ def state_a0(call):
 
     bot.send_message(
         chat_id=call.from_user.id,
-        text=translate(user['language_code'], 'user_support_select_reason'),
+        text=_(user['language_code'], 'user_support_select_reason'),
         reply_markup=MenuKeyboard.reply_keyboard_parse(reasons)
     )
 
@@ -57,7 +57,7 @@ def state_a1(message):
 
     bot.send_message(
         chat_id=message.from_user.id,
-        text=translate(user['language_code'], 'user_support_input_message'),
+        text=_(user['language_code'], 'user_support_input_message'),
         reply_markup=MenuKeyboard.remove_reply()
     )
     bot.set_state(message.from_user.id, SupportState.A2)
@@ -72,7 +72,7 @@ def state_a2(message):
 
         bot.send_message(
             chat_id=message.from_user.id,
-            text=translate(
+            text=_(
                 user['language_code'],
                 'user_support_finally_ticket'
             ).format(
@@ -92,7 +92,7 @@ def state_a3(call):
     if user['is_banned'] == 1:
         bot.answer_callback_query(
             call.id,
-            translate(user['language_code'], 'user_is_banned')
+            _(user['language_code'], 'user_is_banned')
         )
         return
 
@@ -109,7 +109,7 @@ def state_a3(call):
         bot.edit_message_text(
             message_id=call.message.message_id,
             chat_id=call.from_user.id,
-            text=translate(
+            text=_(
                 user['language_code'],
                 'user_support_ticket_created'
             ).format(
@@ -122,7 +122,7 @@ def state_a3(call):
             try:
                 bot.send_message(
                     chat_id=config['notifications_support_chat_id'],
-                    text=translate(
+                    text=_(
                         user['language_code'],
                         'user_support_ticket_created_notification'
                     ).format(

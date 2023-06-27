@@ -1,6 +1,6 @@
 from loader import bot, db
 from states.states import EditPair, CreatePair
-from bot_locale.translate import translate
+from bot_locale.translate import _
 from keyboards.inline.menu import AdminKeyboard, MenuKeyboard
 from telebot.formatting import escape_markdown
 
@@ -17,21 +17,21 @@ callback_data_admin_delete_pair = 'admin.params_pair_delete_'
 callback_data_admin_pair_accept_delete = 'admin.params_pair_accept_delete_'
 
 params = {
-    'from_name': 'inline_admin_pair_edit_from_name',
-    'from_country_code': 'inline_admin_pair_edit_from_country_code',
-    'from_type': 'inline_admin_pair_edit_from_type',
-    'min_from_amount': 'inline_admin_pair_edit_min_from_amount',
-    'max_from_amount': 'inline_admin_pair_edit_max_from_amount',
-    'to_name': 'inline_admin_pair_edit_to_name',
-    'to_country_code': 'inline_admin_pair_edit_to_country_code',
-    'to_type': 'inline_admin_pair_edit_from_type',
+    'from_name':             'inline_admin_pair_edit_from_name',
+    'from_country_code':     'inline_admin_pair_edit_from_country_code',
+    'from_type':             'inline_admin_pair_edit_from_type',
+    'min_from_amount':       'inline_admin_pair_edit_min_from_amount',
+    'max_from_amount':       'inline_admin_pair_edit_max_from_amount',
+    'to_name':               'inline_admin_pair_edit_to_name',
+    'to_country_code':       'inline_admin_pair_edit_to_country_code',
+    'to_type':               'inline_admin_pair_edit_from_type',
     'to_requisites_comment': 'inline_admin_pair_edit_to_requisites_comment',
-    'spread': 'inline_admin_pair_edit_spread',
-    'auto_requisites': 'inline_admin_pair_edit_price_handler',
-    'handler_inverted': 'inline_admin_pair_edit_handler_inverted',
-    'from_handler_name': 'inline_admin_pair_edit_from_handler_name',
-    'to_handler_name': 'inline_admin_pair_edit_to_handler_name',
-    'handler_inverted': 'inline_admin_pair_edit_handler_inverted',
+    'spread':                'inline_admin_pair_edit_spread',
+    'auto_requisites':       'inline_admin_pair_edit_price_handler',
+    'handler_inverted':      'inline_admin_pair_edit_handler_inverted',
+    'from_handler_name':     'inline_admin_pair_edit_from_handler_name',
+    'to_handler_name':       'inline_admin_pair_edit_to_handler_name',
+    'handler_inverted':      'inline_admin_pair_edit_handler_inverted',
 }
 
 @bot.callback_query_handler(is_chat=False, func=lambda call: call.data == callback_data_admin_pairs, role=['admin'])
@@ -46,7 +46,7 @@ def admin_banks_list(call):
     bot.edit_message_text(
         chat_id=call.message.chat.id,
         message_id=call.message.message_id,
-        text=translate(user['language_code'], 'admin_page_pairs'),
+        text=_(user['language_code'], 'admin_page_pairs'),
         reply_markup=AdminKeyboard.pairs(
             user,
             pairs,
@@ -65,7 +65,7 @@ def admin_delete_pair(call):
     pair_id = call.data.replace(callback_data_admin_delete_pair ,"")
     pair = db.get_pair(pair_id, name_id="id")
 
-    edit_pair_text = translate(
+    edit_pair_text = _(
         user['language_code'],
         'admin_data_pair_delete'
     ).format(**pair)
@@ -99,7 +99,7 @@ def admin_delete_pair_accept(call):
         value=pair['id']
     )
 
-    edit_pair_text = translate(
+    edit_pair_text = _(
         user['language_code'],
         'admin_data_pair_delete_success'
     ).format(**pair)
@@ -125,7 +125,7 @@ def admin_preview_pair(call):
     pair = db.get_pair(pair_id, name_id="id")
     pair['is_active'] = bool(pair['is_active'])
 
-    edit_pair_text = translate(
+    edit_pair_text = _(
         user['language_code'],
         'admin_data_pair_view'
     ).format(**pair)
@@ -161,7 +161,7 @@ def admin_edit_pair(call):
 
         db.update_pair(pair_id=pair['id'], args={'is_active': status})
 
-        edit_pair_text = translate(
+        edit_pair_text = _(
             user['language_code'],
             'admin_data_pair_view'
         ).format(**pair)
@@ -185,7 +185,7 @@ def admin_edit_pair(call):
 
         db.update_pair(pair_id=pair['id'], args={'verification_account': verification_account})
 
-        edit_pair_text = translate(
+        edit_pair_text = _(
             user['language_code'],
             'admin_data_pair_view'
         ).format(**pair)
@@ -209,7 +209,7 @@ def admin_edit_pair(call):
 
         db.update_pair(pair_id=pair['id'], args={'auto_requisites': auto_requisites})
 
-        edit_pair_text = translate(
+        edit_pair_text = _(
             user['language_code'],
             'admin_data_pair_view'
         ).format(**pair)
@@ -230,11 +230,11 @@ def admin_edit_pair(call):
         data['pair_id'] = pair['id']
         data['parameter'] = parameter
 
-    edit_country_text = translate(
+    edit_country_text = _(
         user['language_code'],
         'edit_pair_parameter'
     ).format(
-        translate(user['language_code'], params[parameter])
+        _(user['language_code'], params[parameter])
     )
     bot.edit_message_text(
         chat_id=call.message.chat.id,
@@ -297,7 +297,7 @@ def edit_pair_param(message):
 
         # Получаем актуальные данные и возвращаем в админку
         pair = db.get_pair(data['pair_id'], name_id="id")
-        edit_pair_text = translate(
+        edit_pair_text = _(
             user['language_code'],
             'admin_data_pair_view'
         ).format(**pair)
@@ -312,7 +312,7 @@ def edit_pair_param(message):
 
         bot.send_message(
             chat_id=message.chat.id,
-            text=translate(user['language_code'], 'admin_data_success_edit')
+            text=_(user['language_code'], 'admin_data_success_edit')
         )
         bot.send_message(
             chat_id=message.chat.id,
@@ -338,7 +338,7 @@ def admin_create_pair(call):
     bot.edit_message_text(
         chat_id=call.message.chat.id,
         message_id=call.message.message_id,
-        text=translate(user['language_code'], 'create_pair_input_from_name'),
+        text=_(user['language_code'], 'create_pair_input_from_name'),
         reply_markup=MenuKeyboard.back_to(user, key_string='inline_back_to', data=callback_data_admin_pairs)
     )
 
@@ -364,7 +364,7 @@ def create_pair_a1(message):
         data['from_name'] = message.text
         bot.send_message(
             user_id,
-            text=translate(user['language_code'], 'create_pair_input_to_name')
+            text=_(user['language_code'], 'create_pair_input_to_name')
         )
 
     bot.set_state(user_id, CreatePair.A2)
@@ -380,7 +380,7 @@ def create_pair_a2(message):
         data['to_name'] = message.text
         bot.send_message(
             user_id,
-            text=translate(user['language_code'], 'create_pair_input_from_amount').format(data['from_name'] )
+            text=_(user['language_code'], 'create_pair_input_from_amount').format(data['from_name'] )
         )
 
     bot.set_state(user_id, CreatePair.A3)
@@ -407,7 +407,7 @@ def create_pair_a3(message):
         data['from_max_amount'] = max
         bot.send_message(
             user_id,
-            text=translate(user['language_code'], 'create_pair_input_from_country_code').format(data['from_name'])
+            text=_(user['language_code'], 'create_pair_input_from_country_code').format(data['from_name'])
         )
 
     bot.set_state(user_id, CreatePair.A4)
@@ -423,7 +423,7 @@ def create_pair_a4(message):
         data['from_country_code'] = message.text
         bot.send_message(
             user_id,
-            text=translate(user['language_code'], 'create_pair_input_from_country_code').format(data['to_name'])
+            text=_(user['language_code'], 'create_pair_input_from_country_code').format(data['to_name'])
         )
 
     bot.set_state(user_id, CreatePair.A5)
@@ -439,7 +439,7 @@ def create_pair_a5(message):
         data['to_country_code'] = message.text
         bot.send_message(
             user_id,
-            text=translate(user['language_code'], 'create_pair_input_spread')
+            text=_(user['language_code'], 'create_pair_input_spread')
         )
 
     bot.set_state(user_id, CreatePair.A6)
@@ -459,7 +459,7 @@ def create_pair_a5(message):
             data['spread'] = 0
 
         try:
-            text = translate(
+            text = _(
                 user['language_code'],
                 'create_pair_view_info'
             ).format(**{
@@ -510,7 +510,7 @@ def create_pair_a6(call):
             print(e)
             return
 
-        msg = translate(
+        msg = _(
             user['language_code'],
             'create_pair_success'
         ).format(**{

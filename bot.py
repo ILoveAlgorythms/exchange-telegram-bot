@@ -4,7 +4,7 @@ import filters, handlers
 from middlewares.antiflood import AntiFloodMiddleware
 import argparse
 
-# Включаем фильтры
+# Добавляем фильтры
 bot.add_custom_filter(custom_filters.StateFilter(bot))
 bot.add_custom_filter(filters.main_filters.IsChat())
 bot.add_custom_filter(filters.main_filters.Role())
@@ -12,7 +12,7 @@ bot.add_custom_filter(filters.main_filters.IsAmount())
 bot.add_custom_filter(filters.main_filters.IsCancelAction())
 bot.add_custom_filter(custom_filters.IsDigitFilter())
 
-# Включаем middlewares
+# Добавляем middlewares
 bot.setup_middleware(AntiFloodMiddleware(1))
 
 if __name__ == '__main__':
@@ -23,7 +23,6 @@ if __name__ == '__main__':
 
     # Импортирует базу, если требуется
     if args.db == 'import':
-        print("Импортирую базу данных...")
         db.create_structure(ROOT_DIR)
 
     try:
@@ -32,7 +31,7 @@ if __name__ == '__main__':
 
         # Запускаем
         bot.infinity_polling(
-            restart_on_change=config.getboolean('DEFAULT', 'debug')
+            restart_on_change=config.getboolean('default', 'debug')
         )
     except Exception as e:
         print(e)

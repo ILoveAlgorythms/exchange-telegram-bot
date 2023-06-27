@@ -65,6 +65,7 @@ def cryptoexchange_parse_rate(from_name: str, to_name: str, r: int = 3, is_updat
         for pair in root.findall('item'):
             rate_from_name = pair.find('from').text
             rate_to_name = pair.find('to').text
+
             rate_in = pair.find('in').text
             rate_out = pair.find('out').text
 
