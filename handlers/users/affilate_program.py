@@ -9,7 +9,7 @@ callback_data_affilate_program = 'bot.user.affilate_program'
 def affilate_program(call):
     """ Партнёрская программа
     """
-    user = db.get_user(call.from_user.id)
+    user = db.get_user(call.from_user.id) # вынести в глобальный middleware все базовые надстройки и передавать в объекте закэшированный user
 
     bot.edit_message_text(
         message_id=call.message.message_id,
@@ -19,13 +19,17 @@ def affilate_program(call):
             "affiliate_invite_code": "GW-000000",
             "user_refferer": "-",
             "username": "GreenWalletExchange",
+            # INFO
             "summary_amount": 10.2,
+            # date
             "summary_amount_current_mounth": 10.2,
             "summary_amount_previous_mounth": 0,
-            "summary_amount_first_line": 7,
-            "summary_amount_seconds_line": 3.2,
+            # 1st line
             "summary_user_count_first_line": 2,
+            "summary_amount_first_line": 7,
+            # 2nd line
             "summary_user_count_second_line": 1,
+            "summary_amount_seconds_line": 3.2,
         }),
         # reply_markup=,
         reply_markup=MenuKeyboard.smart({

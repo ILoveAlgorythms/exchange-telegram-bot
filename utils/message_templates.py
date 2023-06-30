@@ -82,7 +82,7 @@ def get_requisites_text(user, deal, requisites):
             'callback_data':  'bot.set.new_exchange'
         },
         string_back_menu: {
-            'callback_data':  'inline_back_to_main_menu'
+            'callback_data':  'bot.back_to_main_menu'
         }
     })
 

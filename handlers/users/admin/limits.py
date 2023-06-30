@@ -31,6 +31,10 @@ def admin_limits_list(call):
         config['time_limit_deals'],
         ["минута","минуты","минут"]
     )
+    time_cancel_deal_plural = Pluralize.ru(
+        config['time_cancel_deal'],
+        ["минута","минуты","минут"]
+    )
     limit_deals_per_plural = Pluralize.ru(
         config['limit_deals_per'],
         ["сделка","сделки","сделок"]
@@ -43,9 +47,12 @@ def admin_limits_list(call):
         'time_limit_deals_plural': time_limit_deals_plural,
         'dispute_deal_limit': config['time_limit_dispute'],
         'dispute_deal_limit_plural': dispute_deal_limit_plural,
+        'time_cancel_deal': config['time_cancel_deal'],
+        'time_cancel_deal_plural': time_cancel_deal_plural,
     })
     string_edit_limit_deals = _(lang, 'inline_params_limits_edit_deals')
     string_edit_limit_dispute_deals = _(lang, 'inline_params_limits_edit_dispute_deals')
+    string_edit_limit_cancel_time_deal = _(lang, 'inline_params_limits_cancel_time_deal')
     string_inline_back_to = _(lang, 'inline_back_to')
 
     bot.edit_message_text(
@@ -55,6 +62,7 @@ def admin_limits_list(call):
         reply_markup=MenuKeyboard.smart({
             string_edit_limit_deals: {'callback_data': (callback_data_admin_edit_limit+'deals_limit')},
             string_edit_limit_dispute_deals: {'callback_data': callback_data_admin_edit_limit+'dispute_deal'},
+            string_edit_limit_cancel_time_deal: {'callback_data': callback_data_admin_edit_limit+'time_cancel_deal'},
             string_inline_back_to: {'callback_data': 'admin.params'},
         })
     )
@@ -69,6 +77,9 @@ def admin_edit_limit(call):
 
     if limit_param == 'dispute_deal':
         key_string = 'admin_edit_limits_dispute_deals'
+
+    if limit_param == 'time_cancel_deal':
+        key_string = 'admin_edit_limits_cancel_time_deals'
 
     bot.set_state(call.from_user.id, EditLimit.A1)
 
@@ -101,11 +112,20 @@ def edit_limit(message):
         if data['param'] == 'dispute_deal':
             first = 1
             try:
-                first = float(message.text)
+                first = int(message.text)
             except Exception as e:
                 print(e)
 
             db.update_config({'time_limit_dispute': first})
+
+        if data['param'] == 'time_cancel_deal':
+            first = 15
+            try:
+                first = int(message.text)
+            except Exception as e:
+                print(e)
+
+            db.update_config({'time_cancel_deal': first})
 
         try:
             bot.delete_message(

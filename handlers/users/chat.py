@@ -52,6 +52,7 @@ def chat_notifications_switcher(call):
         db.update_config({
             'notifications_deal_chat_id': call.message.chat.id
         })
+
         # Сообщаем об успешном изменении
         bot.answer_callback_query(
             call.id,
@@ -91,7 +92,7 @@ def chat_notifications_switcher(call):
         )
 
     # Обновляем данные конфига и выводим новую информацию
-    config = db.get_config()
+    config = db.get_config() # можно избавиться от этого просто изменив словарь выше
 
     bot.edit_message_text(
         chat_id=call.message.chat.id,

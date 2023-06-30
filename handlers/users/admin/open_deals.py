@@ -123,14 +123,15 @@ def admin_open_work_order(call):
             )
         except Exception as e:
             pass
-
-        db.update_deal(deal_id, {'status': 'declined'})
+        db.update_deal(deal_id, {'status': 'declined', 'manager_id': user['id']})
 
     if action_type == 'process':
         deal['manager_id'] = user['id']
         deal['status'] = 'process'
+
         # выдаём состояние и переводим на другой callback
         bot.set_state(call.from_user.id, AdminDeal.requisites)
+
         with bot.retrieve_data(call.from_user.id) as data:
             data['deal'] = json.dumps(
                 deal,
@@ -200,7 +201,7 @@ def admin_open_work_order(call):
                     string_open_main_menu: {'callback_data': 'bot.back_to_main_menu'},
                 })
             )
-            db.update_deal(deal['id'], {'status': 'completed'})
+            db.update_deal(deal['id'], {'status': 'completed', 'manager_id': user['id']})
             # Снимаем блокировку
             cache.delete(cache_waiting_create_new_deal.format(deal['user_id']))
         except Exception as e:

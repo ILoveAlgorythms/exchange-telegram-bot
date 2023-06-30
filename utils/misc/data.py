@@ -49,7 +49,7 @@ def cryptoexchange_parse_rate(from_name: str, to_name: str, r: int = 3, is_updat
             xml = rates.text
 
             # > 500 - это просто условности
-            # бывает что парсер отдаёт пустой файл
+            # бывает что парсер отдаёт пустой xml файл
             # и это просто проверка на наличие инфы
             if len(rates.content) > 500 and rates.headers['content-type'] == 'application/xml':
                 with open(file_path, encoding='utf-8', mode='w') as f:

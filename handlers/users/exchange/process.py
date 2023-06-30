@@ -21,10 +21,52 @@ callback_data_select_to_bank = 'bot.set.exchage_select_to_bank_'
 callback_data_input_amount = 'bot.set.exchage_input_amount_'
 callback_data_exchange_accept = 'bot.set.exchage_accept'
 cache_waiting_create_new_deal = '{0}_deal_locked_time'
+callback_data_accept_agreement = 'bot.accept_agreement'
 
 #======================================================#
 #==============СОЗДАНИЕ СДЕЛКИ ПОЛЬЗОВАТЕЛЕМ===========#
 #======================================================#
+
+
+@bot.callback_query_handler(is_chat=False, func=lambda call: call.data == callback_data_accept_agreement)
+def bot_to_main_menu(call):
+    """ Подтверждает выбор пользователя
+        о соглашении и переводит пользователя
+        к выбору валютных пар
+    """
+    user = db.get_user(call.from_user.id)
+
+    if user['is_agreement'] == False:
+        db.update_user(call.from_user.id, args={'is_agreement': 1})
+
+    bot.answer_callback_query(
+        call.id,
+        text=_(user['language_code'], 'bot_agreement_is_accepted'),
+        show_alert=True
+    )
+
+    # Повторяет код из следующей функции
+    #
+    #
+    # - Получаем пары
+    pairs = db.get_pairs()
+    # - Отображаем сообщение с валютными парами
+
+    bot.delete_message(
+        chat_id=call.message.chat.id,
+        message_id=call.message.message_id,
+    )
+
+    bot.send_message(
+        chat_id=call.message.chat.id,
+        text=_(user['language_code'], 'exchange_select_pair'),
+        reply_markup=MenuKeyboard.pairs(user, pairs, callback_data_select_pair)
+    )
+    # - Даёт возможность перейти к выбору банка
+    bot.set_state(call.from_user.id, ExchageState.A2)
+    #
+    #
+    # Повторяет код из следующей функции
 
 @bot.callback_query_handler(is_chat=False, func=lambda call: call.data.startswith('bot.set.new_exchange'))
 def state_a1(call):
@@ -357,7 +399,7 @@ def state_a5(call):
             print(e)
 
 
-@bot.message_handler(state=ExchageState.A6, is_chat=False, is_amount=False, is_cancel_action=False)
+@bot.message_handler(state=ExchageState.A6, is_chat=False, is_cancel_action=False, is_amount=False)
 def error_state_a6(message):
     """ Если во время ввода суммы обмена
         пользователь ввёл некорректную сумму,
@@ -510,7 +552,7 @@ def exchange_accept(call):
         requisites = None
 
         try:
-
+            # ВЫНЕСТИ ВЕРИФИКАЦИЮ В ОТДЕЛЬНЫЙ обрабтчик после доработки
             if pair['verification_account'] and user['role'] in ['user']:
                 key_string_card_verification = _(lang, 'inline_card_verification')
                 key_string_full_verification = _(lang,'inline_full_verification')
@@ -580,12 +622,24 @@ def exchange_accept(call):
                 "orig_to_amount":           data['orig_calculated_amount'],
                 "spread":                   data['spread'],
                 "calculated_amount":        1,
+                "expires":                  config['time_cancel_deal'],
                 "status":                   deal_status,
             }
 
             # Создаю сделку в базе
             order_id = db.create_deal(deal)
-            kb = None
+
+            string_new_exchange = _(lang, 'inline_create_new_exchange')
+            string_back_menu = _(lang, 'inline_back_to_main_menu')
+
+            kb = MenuKeyboard.smart({
+                string_new_exchange: {
+                    'callback_data':  'bot.set.new_exchange'
+                },
+                string_back_menu: {
+                    'callback_data':  'bot.back_to_main_menu'
+                }
+            })
 
             exchange_text = _(
                 user['language_code'],
@@ -619,9 +673,9 @@ def exchange_accept(call):
         except Exception as e:
             print(e)
 
-        if pair.get('auto_requisites') and requisites != {}:
-            # КОСТЫЛЬ: отменяем дальнейшие действия
-            return False
+        # if pair.get('auto_requisites') and requisites != {}:
+        #     # КОСТЫЛЬ: отменяем дальнейшие действия
+        #     return False
 
         try:
             # Отправляем уведомление о сделке

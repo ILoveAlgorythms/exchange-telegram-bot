@@ -11,10 +11,6 @@ callback_data_admin_open_tickets = 'admin.support_tickets'
 callback_data_admin_work_open_ticket = 'admin.open_work_ticket_'
 callback_data_admin_change_tecnical_break = 'admin.params_change_techinal_break'
 
-
-def get_profile_text():
-    pass
-
 @bot.message_handler(is_chat=False, commands=['u'], role=['admin', 'manager'])
 def profile_handler(message):
     user = db.get_user(message.from_user.id)

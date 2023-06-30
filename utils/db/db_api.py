@@ -597,10 +597,11 @@ class Database():
                 requisites,         exchange_rate,
                 orig_exchange_rate, spread,
                 profit,             calculated_amount,
-                status,             created_at)
+                status,             expires,
+                created_at)
              VALUES
                  ({deals['user_id']}, UPPER(SUBSTR(MD5(RAND()),1,6)), "{deals['from_bank_name']}", "{deals['from_name']}",          {deals['from_amount']}, "{deals['from_bank_id']}", {deals['from_payment_account_id']}, "{deals['to_name']}",            "{deals['to_amount']}",  "{deals['orig_to_amount']}",     "{deals['to_bank_name']}", "{deals['requisites']}",         "{deals['exchange_rate']}", "{deals['orig_exchange_rate']}", "{deals['spread']}", "{deals.get('profit', 0)}",     "{deals['calculated_amount']}",
-                 "{deals['status']}",             "{datetime.now()}")
+                 "{deals['status']}", "{deals['expires']}", "{datetime.now()}")
             """
             with connection.cursor() as cursor:
                 cursor.execute(insert_deal_query)

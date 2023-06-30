@@ -63,6 +63,23 @@ def start_handler(message):
         reply_markup=kb
     )
 
+@bot.message_handler(is_chat=False, func=lambda m: m.text == '🏚 Главное меню')
+def home_menu(message):
+    """ Главное меню ReplyButton
+    """
+    user = db.get_user(message.from_user.id)
+
+    # Очищает любое состояние после вызова команды
+    bot.delete_state(message.from_user.id)
+    text = _(user['language_code'], 'start_text')
+    kb = MenuKeyboard.home(user)
+
+    bot.send_message(
+        message.chat.id,
+        text,
+        reply_markup=kb
+    )
+
 @bot.message_handler(is_chat=False, commands=['agreement'])
 def start_handler(message):
     """ BOT /agreement

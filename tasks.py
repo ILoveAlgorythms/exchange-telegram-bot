@@ -2,7 +2,7 @@ import time
 import schedule
 from loader import bot, db
 from datetime import datetime
-from bot_locale.translate import translate
+from bot_locale.translate import _
 from utils.misc.data import cryptoexchange_parse_rate
 from keyboards.inline.menu import MenuKeyboard
 
@@ -28,6 +28,8 @@ def exceed_time_deal():
         return
 
     for deal in deals:
+        if not deal['updated_at']: continue
+
         user = db.get_user(deal['user_id'], name_id="id")
         now = datetime.now()
         uat = datetime.strptime(str(deal['updated_at']), str_time)
@@ -41,9 +43,9 @@ def exceed_time_deal():
                 {'status': 'declined'}
             )
 
-            srting_back_to = _(user_deal['language_code'], 'inline_back_to_main_menu')
+            srting_back_to = _(user['language_code'], 'inline_back_to_main_menu')
 
-            msg = translate(
+            msg = _(
                 user['language_code'],
                 'deal_system_canceled'
             ).format(**{
@@ -59,12 +61,17 @@ def exceed_time_deal():
 
             print(f"[{datetime.now()}] Сделка №{deal['id']} отменена системой")
 
-# Парсинг актуальных курсов валют из cryptoexchange.cc
-schedule.every(10).minutes.do(cryptoexchange_parse_rate, from_name='SBERRUB', to_name='WISEEUR', is_update=True)
+if __name__ == "__main__":
+    #
+    cryptoexchange_parse_rate(from_name='SBERRUB', to_name='WISEEUR', is_update=True)
+    exceed_time_deal()
 
-# Проверяет и отменяет просроченные сделки
-schedule.every().minute.do(exceed_time_deal)
+    # Парсинг актуальных курсов валют из cryptoexchange.cc
+    schedule.every(10).minutes.do(cryptoexchange_parse_rate, from_name='SBERRUB', to_name='WISEEUR', is_update=True)
 
-while True:
-    schedule.run_pending()
-    time.sleep(1)
+    # Проверяет и отменяет просроченные сделки
+    schedule.every().minute.do(exceed_time_deal)
+
+    while True:
+        schedule.run_pending()
+        time.sleep(1)

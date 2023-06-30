@@ -3,6 +3,10 @@ from loader import db, me
 from bot_locale.translate import _
 from datetime import datetime, timedelta
 
+# Полностью переписать на quick_markup
+#
+#
+
 class AdminKeyboard:
     back_inline_keyboard = None
 
