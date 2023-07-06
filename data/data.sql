@@ -7,7 +7,7 @@
 #
 # Host: 127.0.0.1 (MySQL 8.0.23)
 # Database: p2p_exchange_bot
-# Generation Time: 2023-06-30 09:20:37 +0000
+# Generation Time: 2023-07-06 17:13:31 +0000
 # ************************************************************
 
 
@@ -104,6 +104,9 @@ CREATE TABLE `config` (
   `time_cancel_deal` int NOT NULL DEFAULT '15',
   `affilate_mode` tinyint(1) NOT NULL DEFAULT '1',
   `google_sheet_id` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT '',
+  `affilate_status` tinyint NOT NULL DEFAULT '1',
+  `affilate_base_asset` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'USDT',
+  `affilate_min_amount_withdrawal` float NOT NULL DEFAULT '30',
   `created_at` timestamp NOT NULL,
   `updated_at` timestamp NOT NULL ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -111,9 +114,9 @@ CREATE TABLE `config` (
 LOCK TABLES `config` WRITE;
 /*!40000 ALTER TABLE `config` DISABLE KEYS */;
 
-INSERT INTO `config` (`technical_break`, `notifications_deal_chat_id`, `notifications_support_chat_id`, `time_limit_dispute`, `limit_deals_per`, `time_limit_deals`, `time_cancel_deal`, `affilate_mode`, `google_sheet_id`, `created_at`, `updated_at`)
+INSERT INTO `config` (`technical_break`, `notifications_deal_chat_id`, `notifications_support_chat_id`, `time_limit_dispute`, `limit_deals_per`, `time_limit_deals`, `time_cancel_deal`, `affilate_mode`, `google_sheet_id`, `affilate_status`, `affilate_base_asset`, `affilate_min_amount_withdrawal`, `created_at`, `updated_at`)
 VALUES
-	(0,-1001989209456,-1001842587194,60,20,0,45,1,'','2023-04-25 09:15:21','2023-06-27 19:01:56');
+	(0,-1001989209456,-1001842587194,60,20,1,45,1,'',1,'USDT',30,'2023-04-25 09:15:21','2023-07-06 11:23:49');
 
 /*!40000 ALTER TABLE `config` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -177,7 +180,7 @@ CREATE TABLE `deals` (
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `created_at` timestamp NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=57 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=79 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 LOCK TABLES `deals` WRITE;
 /*!40000 ALTER TABLE `deals` DISABLE KEYS */;
@@ -239,7 +242,29 @@ VALUES
 	(53,'D10DA3',12,5,'RUB',13940,'Тинькофф',3,5,'-','USDT',148.269,146.045,'TRC-20','TCZKVaF6KPLrdtqn39Ng3tGV8ipGF5vJY4',94.018,95.45,1.5,7.11,'USDT',1,'completed',45,'2023-06-29 12:05:38','2023-06-29 11:42:39'),
 	(54,'C151E5',0,5,'RUB',11750,'Тинькофф',3,5,'-','USDT',124.976,123.101,'TRC-20','TCZKVaF6KPLrdtqn39Ng3tGV8ipGF5vJY4',94.018,95.45,1.5,0,'USDT',1,'declined',45,'2023-06-29 12:29:30','2023-06-29 11:43:56'),
 	(55,'85FDFC',12,5,'RUB',11750,'Тинькофф',3,5,'-','USDT',125.002,123.127,'TRC-20','TCZKVaF6KPLrdtqn39Ng3tGV8ipGF5vJY4',93.999,95.43,1.5,5.69,'USDT',1,'completed',45,'2023-06-29 12:38:39','2023-06-29 12:30:41'),
-	(56,'476F68',12,5,'RUB',10500,'Тинькофф',3,5,'-','USDT',111.844,110.167,'TRC-20','TCZKVaF6KPLrdtqn39Ng3tGV8ipGF5vJY4',93.88,95.31,1.5,5.08,'USDT',1,'completed',45,'2023-06-29 15:19:22','2023-06-29 15:10:00');
+	(56,'476F68',12,5,'RUB',10500,'Тинькофф',3,5,'-','USDT',111.844,110.167,'TRC-20','TCZKVaF6KPLrdtqn39Ng3tGV8ipGF5vJY4',93.88,95.31,1.5,5.08,'USDT',1,'completed',45,'2023-06-29 15:19:22','2023-06-29 15:10:00'),
+	(57,'8E65B2',18,18,'RUB',7097.16,'Сбербанк',5,0,'-','CNY',500,7455,'AliPay','12041092490',14.194,14.91,4.8,0,'USDT',1,'declined',45,'2023-07-05 16:00:36','2023-07-05 15:48:10'),
+	(58,'A7E3B1',18,18,'RUB',5000,'Сбербанк',5,1,'-','USDT',51.729,50.9528,'BEP-20','120419241',96.658,98.13,1.5,0,'USDT',1,'declined',45,'2023-07-05 16:00:31','2023-07-05 15:48:25'),
+	(59,'C0A88A',3,3,'RUB',96589.1,'Сбербанк',5,1,'-','USDT',1000,98060,'TRC-20','Коктаиаиаиаоа',96.589,98.06,1.5,0,'USDT',1,'declined',45,'2023-07-05 16:00:56','2023-07-05 15:59:54'),
+	(60,'195A98',3,3,'RUB',50000,'Сбербанк',5,1,'-','USDT',510.576,502.917,'TRC-20','Ппоплпоплагпо',97.929,99.42,1.5,0,'USDT',1,'declined',45,'2023-07-06 10:38:19','2023-07-06 10:38:06'),
+	(61,'719057',18,18,'RUB',5000,'Сбербанк',5,1,'-','USDT',50.554,49.7958,'TRC-20','12941249125',98.904,100.41,1.5,0,'USDT',1,'declined',45,'2023-07-06 10:47:39','2023-07-06 10:40:03'),
+	(62,'3458B4',18,18,'RUB',5000,'Тинькофф',3,5,'-','USDT',50.554,49.7958,'BEP-20','124012590125',98.904,100.41,1.5,0,'USDT',1,'declined',45,'2023-07-06 10:47:29','2023-07-06 10:41:46'),
+	(63,'30B5EF',18,18,'RUB',5000,'Сбербанк',5,1,'-','USDT',50.554,49.7958,'BEP-20','12951925912591250',98.904,100.41,1.5,0,'USDT',1,'declined',45,'2023-07-06 10:47:34','2023-07-06 10:42:00'),
+	(64,'177B78',18,18,'RUB',5000,'Сбербанк',5,0,'-','CNY',343.275,326.797,'Номер карты (Китай)','591129519025',14.566,15.3,4.8,0,'USDT',1,'declined',45,'2023-07-06 10:47:25','2023-07-06 10:42:09'),
+	(65,'3E26D1',18,18,'RUB',49451.9,'Сбербанк',5,1,'-','USDT',500,50205,'BEP-20','125912951925912519205',98.904,100.41,1.5,0,'USDT',1,'declined',45,'2023-07-06 10:47:21','2023-07-06 10:42:21'),
+	(66,'D97CF4',18,18,'USDT',766.856,'BEP-20',11,6,'-','CNY',5000,718.391,'Номер карты (Китай)','5219915212590',6.52,6.96,6.32,0,'USDT',1,'declined',45,'2023-07-06 10:47:17','2023-07-06 10:42:32'),
+	(67,'4D9930',18,18,'RUB',49451.9,'Сбербанк',5,1,'-','USDT',500,50205,'BEP-20','500192519255912',98.904,100.41,1.5,0,'USDT',1,'declined',45,'2023-07-06 10:47:12','2023-07-06 10:42:46'),
+	(68,'3B08D0',18,18,'RUB',5000,'Сбербанк',5,1,'-','USDT',50.554,49.7958,'BEP-20','129419024901',98.904,100.41,1.5,0,'USDT',1,'declined',45,'2023-07-06 10:47:07','2023-07-06 10:44:45'),
+	(69,'62B476',0,18,'RUB',5000,'Сбербанк',5,1,'-','USDT',50.772,50.01,'BEP-20','121925912',98.48,99.98,1.5,0,'USDT',1,'declined',45,'2023-07-06 11:34:56','2023-07-06 10:49:37'),
+	(70,'A7DCAB',0,18,'RUB',49240.1,'Тинькофф',3,5,'-','USDT',500,49990,'ERC-20','941294',98.48,99.98,1.5,0,'USDT',1,'declined',45,'2023-07-06 11:34:56','2023-07-06 10:49:48'),
+	(71,'85B867',0,18,'RUB',5000,'Сбербанк',5,1,'-','USDT',50.772,50.01,'BEP-20','12591295',98.48,99.98,1.5,0,'USDT',1,'declined',45,'2023-07-06 11:35:56','2023-07-06 10:49:58'),
+	(72,'060AC6',0,18,'RUB',5000,'Сбербанк',5,1,'-','USDT',50.772,50.01,'BEP-20','12941924',98.48,99.98,1.5,0,'USDT',1,'declined',45,'2023-07-06 11:36:57','2023-07-06 10:51:29'),
+	(73,'0DF327',12,5,'RUB',38466,'Сбербанк',5,1,'-','USDT',390.557,384.698,'TRC-20','TCZKVaF6KPLrdtqn39Ng3tGV8ipGF5vJY4',98.49,99.99,1.5,21.7,'USDT',1,'completed',45,'2023-07-06 11:38:53','2023-07-06 11:12:36'),
+	(74,'DD7412',12,5,'RUB',42000,'Сбербанк',5,1,'-','USDT',428.582,422.153,'TRC-20','TCZKVaF6KPLrdtqn39Ng3tGV8ipGF5vJY4',97.998,99.49,1.5,22.42,'USDT',1,'completed',45,'2023-07-06 11:47:47','2023-07-06 11:21:18'),
+	(75,'F416A7',12,5,'RUB',44650,'Сбербанк',5,1,'-','USDT',455.623,448.789,'TRC-20','TCZKVaF6KPLrdtqn39Ng3tGV8ipGF5vJY4',97.998,99.49,1.5,21.76,'USDT',1,'completed',45,'2023-07-06 11:52:40','2023-07-06 11:25:18'),
+	(76,'C4BBD4',12,5,'RUB',96560,'Райффайзенбанк',8,3,'-','USDT',983.649,968.894,'TRC-20','TCZKVaF6KPLrdtqn39Ng3tGV8ipGF5vJY4',98.165,99.66,1.5,54.52,'USDT',1,'completed',45,'2023-07-06 12:07:46','2023-07-06 11:42:47'),
+	(77,'2652DF',12,5,'RUB',25990,'Сбербанк',5,2,'-','USDT',268.448,264.422,'TRC-20','TCZKVaF6KPLrdtqn39Ng3tGV8ipGF5vJY4',96.816,98.29,1.5,13.66,'USDT',1,'completed',45,'2023-07-06 13:59:05','2023-07-06 13:29:45'),
+	(78,'75E611',0,5,'RUB',65000,'Тинькофф',3,5,'-','USDT',668.658,658.628,'TRC-20','TCZKVaF6KPLrdtqn39Ng3tGV8ipGF5vJY4',97.21,98.69,1.5,0,'USDT',1,'declined',45,'2023-07-06 16:41:37','2023-07-06 15:56:35');
 
 /*!40000 ALTER TABLE `deals` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -458,8 +483,9 @@ CREATE TABLE `transactions` (
 
 CREATE TABLE `users` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `uid` varchar(12) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT '',
   `telegram_id` bigint NOT NULL,
-  `referer_id` int DEFAULT '0',
+  `refferer_id` int NOT NULL DEFAULT '0',
   `language_code` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'ru',
   `username` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'username_is_empty',
   `verification` enum('anonymous','process','card_verified','full_verified') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT 'anonymous',
@@ -471,27 +497,28 @@ CREATE TABLE `users` (
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `created_at` timestamp NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
 
-INSERT INTO `users` (`id`, `telegram_id`, `referer_id`, `language_code`, `username`, `verification`, `verification_data`, `role`, `is_admin`, `is_agreement`, `is_banned`, `updated_at`, `created_at`)
+INSERT INTO `users` (`id`, `uid`, `telegram_id`, `refferer_id`, `language_code`, `username`, `verification`, `verification_data`, `role`, `is_admin`, `is_agreement`, `is_banned`, `updated_at`, `created_at`)
 VALUES
-	(2,1776127555,0,'ru','mr_x0r','anonymous','null','user',0,1,0,'2023-06-18 01:41:47','2023-04-26 17:02:17'),
-	(3,5698719743,0,'ru','ZergTrust','anonymous','null','admin',1,1,0,'2023-06-18 11:28:05','2023-04-28 11:56:54'),
-	(4,37913419,0,'ru','MrGreen4you','anonymous','null','admin',1,1,0,'2023-06-29 15:19:56','2023-04-28 12:10:34'),
-	(5,812027680,0,'ru','mrslera','anonymous','null','user',1,1,0,'2023-06-18 01:41:52','2023-04-28 12:12:25'),
-	(6,1620022975,0,'ru','ibatenka','card_verified','{\"card_verified\": \"4276550100766313\"}','user',1,1,0,'2023-06-21 07:24:11','2023-05-08 14:55:46'),
-	(7,5343576955,0,'ru','mr_osminolog','anonymous','null','user',0,1,0,'2023-06-18 01:41:55','2023-05-12 11:08:42'),
-	(8,567350571,0,'ru','KirSchmunk','anonymous','null','user',0,1,0,'2023-06-18 01:41:58','2023-05-12 20:22:38'),
-	(9,397039103,0,'ru','arturkogut','anonymous','null','user',0,1,0,'2023-06-18 01:41:59','2023-05-12 20:45:04'),
-	(10,409074651,0,'ru','MiyukiMori','anonymous','null','user',0,1,0,'2023-06-18 01:41:59','2023-05-15 23:12:13'),
-	(11,391711549,0,'ru','Trust5001','anonymous','null','user',0,1,0,'2023-06-18 01:42:03','2023-05-18 15:43:18'),
-	(12,801293585,0,'ru','prepo_d','anonymous','null','admin',0,1,0,'2023-06-27 16:17:23','2023-06-20 17:52:05'),
-	(13,379600791,0,'ru','honeydreamer','anonymous',NULL,'user',0,1,0,'2023-06-28 17:40:39','2023-06-28 17:31:29'),
-	(15,5054991166,0,'ru','Bredfried','anonymous',NULL,'user',0,1,0,'2023-06-28 17:37:53','2023-06-28 17:35:07'),
-	(18,1450360842,0,'ru','paulfake','anonymous',NULL,'admin',0,1,0,'2023-06-28 18:23:28','2023-06-28 17:38:19');
+	(2,'937E04',1776127555,18,'ru','mr_x0r','anonymous','null','user',0,1,0,'2023-07-06 19:05:28','2023-04-26 17:02:17'),
+	(3,'326794',5698719743,4,'ru','ZergTrust','anonymous','null','admin',1,1,0,'2023-07-06 19:19:11','2023-04-28 11:56:54'),
+	(4,'4559DB',37913419,0,'ru','MrGreen4you','anonymous','null','admin',1,1,0,'2023-07-06 17:01:35','2023-04-28 12:10:34'),
+	(5,'00CF13',812027680,0,'ru','mrslera','anonymous','null','user',1,1,0,'2023-07-06 17:01:35','2023-04-28 12:12:25'),
+	(6,'E75945',1620022975,4,'ru','ibatenka','card_verified','{\"card_verified\": \"4276550100766313\"}','user',1,1,0,'2023-07-06 19:19:13','2023-05-08 14:55:46'),
+	(7,'ACC960',5343576955,0,'ru','mr_osminolog','anonymous','null','user',0,1,0,'2023-07-06 17:01:35','2023-05-12 11:08:42'),
+	(8,'B9E6A4',567350571,0,'ru','KirSchmunk','anonymous','null','user',0,1,0,'2023-07-06 17:01:35','2023-05-12 20:22:38'),
+	(9,'9F7611',397039103,0,'ru','arturkogut','anonymous','null','user',0,1,0,'2023-07-06 17:01:35','2023-05-12 20:45:04'),
+	(10,'691A53',409074651,0,'ru','MiyukiMori','anonymous','null','user',0,1,0,'2023-07-06 19:19:21','2023-05-15 23:12:13'),
+	(11,'986660',391711549,0,'ru','Trust5001','anonymous','null','user',0,1,0,'2023-07-06 17:01:35','2023-05-18 15:43:18'),
+	(12,'08B7F5',801293585,0,'ru','prepo_d','anonymous','null','admin',0,1,0,'2023-07-06 19:19:23','2023-06-20 17:52:05'),
+	(13,'D69B3F',379600791,0,'ru','honeydreamer','anonymous',NULL,'user',0,1,0,'2023-07-06 17:01:35','2023-06-28 17:31:29'),
+	(15,'56E121',5054991166,0,'ru','Bredfried','anonymous',NULL,'user',0,1,0,'2023-07-06 17:01:35','2023-06-28 17:35:07'),
+	(18,'3FEF47',1450360842,0,'ru','paulfake','anonymous',NULL,'admin',0,0,0,'2023-07-06 19:33:47','2023-07-06 18:08:13'),
+	(19,'088DD5',563886330,3,'ru','anastas428','anonymous',NULL,'user',0,1,0,'2023-07-06 19:18:40','2023-07-04 14:31:38');
 
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
