@@ -406,6 +406,34 @@ class Database():
                 cursor.execute(insert_users_query, params)
                 connection.commit()
 
+    def distribute_referral_balance(self, user_id, amount, level=1, levels={ 1: 10, 2: 5 }):
+        """ Распределяет средства
+            по балансам рефералов
+
+            :user_id: int   идентификатор
+            :amount:  float сумма
+            :level:   уровень
+        """
+        user = Database.get_user(user_id, name_id="id")
+        if user.get('refferer_id') is not None:
+            referral_id = user.get('refferer_id') # ID реферала
+            referral_percentage = levels[level]  # Процент для текущего уровня
+            # Расчет и начисление средств рефералу
+            referral_amount = round(10 * Decimal(referral_percentage) / 100, 2)
+            cursor.execute('UPDATE users SET referral_balance = referral_balance + %s WHERE id = %s',
+                     (referral_amount, referral_id))
+
+            if level <= len(levels):
+                distribute_referral_balance(referral_id, referral_amount, level+1)
+
+        with connect(host=self.host, user=self.user, password=self.password, database=self.db) as connection:
+            insert_users_query = f"""
+             UPDATE users {sql} WHERE {name_id} = {user}
+            """
+            with connection.cursor() as cursor:
+                cursor.execute(insert_users_query, params)
+                connection.commit()
+
     def update_deal(self, deal_id: int, args: dict, name_id='id'):
         """ Обновляет данные о сделке
 
@@ -454,7 +482,7 @@ class Database():
                 cursor.execute(insert_pair_query, params)
                 connection.commit()
 
-    def create_user(self, user, lang='ru'):
+    def create_user(self, user, refferer_id=0, lang='ru'):
         """ Создаёт пользователя
 
             :user: object message.from_user
@@ -462,9 +490,9 @@ class Database():
         """
         with connect(host=self.host, user=self.user, password=self.password, database=self.db) as connection:
             insert_user_query = f"""
-             INSERT INTO users (telegram_id, language_code, username, created_at)
+             INSERT INTO users (uid, telegram_id, refferer_id, language_code, username, created_at)
              VALUES
-                 ({user.id}, "{lang}", "{user.username}", "{datetime.now()}")
+                 (UPPER(SUBSTR(MD5(RAND()),1,6)), {user.id}, {refferer_id}, "{lang}", "{user.username}", "{datetime.now()}")
             """
             with connection.cursor() as cursor:
                 cursor.execute(insert_user_query)
@@ -619,3 +647,13 @@ class Database():
                     select_count_query = f"""SELECT COUNT(*) FROM {table} {sql}"""
                     cursor.execute(select_count_query)
                     return cursor.fetchone()[0]
+
+    def get_refferal_lines(self, user_id=0):
+        """ Кол-во рефералов по двум линиям
+
+        """
+        with connect(host=self.host, user=self.user, password=self.password, database=self.db) as connection:
+            with connection.cursor(dictionary=True, buffered=True) as cursor:
+                    sql = f"""SELECT (SELECT COUNT(*) FROM users WHERE refferer_id = {user_id}) AS first_line, (SELECT COUNT(*) FROM users WHERE refferer_id IN (SELECT id FROM users WHERE refferer_id = {user_id})) AS second_line;"""
+                    cursor.execute(sql)
+                    return cursor.fetchone()

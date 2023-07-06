@@ -1,4 +1,4 @@
-from loader import bot, db, cache, me
+from loader import bot, db, cache, me, config
 from bot_locale.translate import _
 from keyboards.inline.menu import MenuKeyboard
 import json
@@ -9,29 +9,38 @@ callback_data_affilate_program = 'bot.user.affilate_program'
 def affilate_program(call):
     """ Партнёрская программа
     """
-    user = db.get_user(call.from_user.id) # вынести в глобальный middleware все базовые надстройки и передавать в объекте закэшированный user
+    # TASK: вынести в глобальный middleware все базовые надстройки пользователя и передавать в объекте закэшированный user
+    bot_cfg = db.get_config()
+
+    user = db.get_user(call.from_user.id)
+    affilate_id = f"{config['affilate']['prefix']}{user['uid']}"
+
+    refferal_lines = db.get_refferal_lines(user['id'])
+    refferer = _(user['language_code'], 'no_refferer')
+
+    if user['refferer_id'] > 0:
+        refferer = db.get_user(user['refferer_id'], name_id="id")
+        refferer = refferer['username'] # sorry
 
     bot.edit_message_text(
         message_id=call.message.message_id,
         chat_id=call.from_user.id,
-        # text=_(user['language_code'], 'user_support_select_reason'),
-        text="💎 *Партнёрская программа*\n\nВаш ID: {affiliate_invite_code}\nВас пригласил: {user_refferer}\nВаша партнерская ссылка: `https://t.me/{username}?start={affiliate_invite_code}`\nВсего заработано: {summary_amount} USDT\n\nОборот реферальной структуры (2 линии + свой)\nТекущий месяц: {summary_amount_current_mounth} USDT\n\nПрошедший месяц: {summary_amount_previous_mounth} USDT\n\n1 линия. Кол-во человек: {summary_user_count_first_line}\nОборот: {summary_amount_first_line} USD\n2 линия. Кол-во человек: {summary_user_count_second_line}\nОборот: {summary_amount_seconds_line} USD".format(**{
-            "affiliate_invite_code": "GW-000000",
-            "user_refferer": "-",
-            "username": "GreenWalletExchange",
-            # INFO
-            "summary_amount": 10.2,
-            # date
-            "summary_amount_current_mounth": 10.2,
-            "summary_amount_previous_mounth": 0,
-            # 1st line
-            "summary_user_count_first_line": 2,
-            "summary_amount_first_line": 7,
-            # 2nd line
-            "summary_user_count_second_line": 1,
-            "summary_amount_seconds_line": 3.2,
+        text=_(
+            user['language_code'],
+            'affilate_user_text'
+        ).format(**{
+            'affiliate_invite_code':          affilate_id,
+            'user_refferer':                  refferer,
+            'username':                       me.username,
+            'summary_amount':                 0,
+            'summary_amount_current_mounth':  0,
+            'summary_amount_previous_mounth': 0,
+            'summary_user_count_first_line':  refferal_lines['first_line'],
+            'summary_amount_first_line':      0,
+            'summary_user_count_second_line': refferal_lines['second_line'],
+            'summary_amount_seconds_line':    0,
+            'base_asset':                     bot_cfg['affilate_base_asset']
         }),
-        # reply_markup=,
         reply_markup=MenuKeyboard.smart({
             'Withdrawal': {
                 'callback_data': 'bot.back_to_main_menu'

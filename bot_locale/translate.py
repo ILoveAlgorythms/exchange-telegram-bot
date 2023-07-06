@@ -288,6 +288,10 @@ locales['ru'] = {
     'string_updated_at_none': 'не обновлялось',
     'inline_process_verification': '⚠️ Ваши данные верификации находятся на проверке, ожидайте',
 
+    'affilate_user_text': '💎 *Партнёрская программа*\n\nВаш ID: {affiliate_invite_code}\nВас пригласил: {user_refferer}\nВаша партнерская ссылка: `https://t.me/{username}?start={affiliate_invite_code}`\nВсего заработано: {summary_amount} {base_asset}\n\nОборот реферальной структуры (2 линии)\nТекущий месяц: {summary_amount_current_mounth} USDT\n\nПрошедший месяц: {summary_amount_previous_mounth} {base_asset}\n\n1 линия. Кол-во человек: {summary_user_count_first_line}\nОборот: {summary_amount_first_line} {base_asset}\n2 линия. Кол-во человек: {summary_user_count_second_line}\nОборот: {summary_amount_seconds_line} {base_asset}',
+
+    'no_refferer': '-',
+
     # Message template
     'msg_deal': '📋 Сделка №{id}',
     'msg_deal_attachment': '💬 *Вложение от пользователя по сделке* `№{id}`\n\n*Сообщение:*\n{text}',
@@ -453,4 +457,4 @@ def _(code: str, key: str) -> str:
         :code: str код языка
         :key: str языковая строка
     """
-    return locales.get(code, config['default']['language']).get(key, 'StringNotFound')
+    return locales.get(code, config['default']['language']).get(key, 'Строка не найдена')

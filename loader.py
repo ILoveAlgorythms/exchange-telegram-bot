@@ -7,7 +7,7 @@ from utils.db.db_api import Database
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 config = configparser.ConfigParser()
-config.read('./data/config.ini')
+config.read('./config/config.ini')
 
 db = Database(
     host=config['Mysql']['hostname'],

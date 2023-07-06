@@ -3,12 +3,12 @@ import gspread
 import json
 
 # for test
-def uploading(table_id="1zjxECztH9Kxl5lx8lwJVQHg_YI-okJ0bmrTcPgymRrY"):
+def uploading(table_id="1lH2fTRfE4x9mLXfPrUbTYEejyGOp4ZwmaZI-2XRDPIg"):
     """ Выгружает сделки в гугл таблицу
 
         debug версия
     """
-    gsh_filepath = ROOT_DIR + '/data/client.json'
+    gsh_filepath = ROOT_DIR + '/config/client.json'
 
     gc = gspread.service_account(filename=gsh_filepath)
     sheet = gc.open_by_key(table_id)
@@ -20,7 +20,6 @@ def uploading(table_id="1zjxECztH9Kxl5lx8lwJVQHg_YI-okJ0bmrTcPgymRrY"):
     values_list = worksheet.col_values(1)
 
     # Маска для конвертации
-    # строкой даты в datetime объект
     str_time = "%Y-%m-%d %H:%M:%S"
     data = []
 
@@ -42,13 +41,16 @@ def uploading(table_id="1zjxECztH9Kxl5lx8lwJVQHg_YI-okJ0bmrTcPgymRrY"):
         user = db.get_user(deal['user_id'], name_id='id')
         manager = db.get_user(deal['manager_id'], name_id='id')
 
+        if manager is None:
+            continue
+
         if deal.get('from_payment_account_id') > 0:
             account = db.get_payment_accoumt(deal['from_payment_account_id'])
             deal['from_requisites'] = f"{account.get('account', '-')} ({account.get('account_info', '-')})"
 
         data = [
             deal['id'],
-            f"@{manager['username']} ({manager['telegram_id']})",
+            f"@{manager.get('username')} ({manager.get('telegram_id')})",
             f"@{user['username']} ({user['telegram_id']})",
             f"{deal['from_name']} -> {deal['to_name']}",
             f"{deal['from_amount']} {deal['from_name']}",

@@ -4,6 +4,3 @@ __pycache__/
 **/.DS_Store
 *.log
 media/
-data/files/
-config.ini
-tokens.txt

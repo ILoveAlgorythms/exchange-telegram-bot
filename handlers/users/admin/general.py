@@ -21,8 +21,6 @@ def profile_handler(message):
         bot.send_message(message.from_user.id, _(lang, 'incorrect_arguments').format(message.text))
         return
 
-
-
 @bot.message_handler(is_chat=False, commands=['admin'], role=['manager', 'admin'])
 def admin_home(message):
     """ BOT /admin

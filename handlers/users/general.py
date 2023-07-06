@@ -1,4 +1,4 @@
-from loader import bot, db, ROOT_DIR
+from loader import bot, db, ROOT_DIR, config
 from bot_locale.translate import _
 from keyboards.inline.menu import MenuKeyboard
 from telebot.util import extract_arguments
@@ -20,19 +20,23 @@ def start_handler(message):
         если пользователь существует
     """
     user = db.get_user(message.from_user.id)
-    if not user:
-        db.create_user(message.from_user)
-        user = db.get_user(message.from_user.id)
+    args = extract_arguments(message.text)
+    refferer_id = 0
 
-    # Очищает любое состояние после вызова команды
-    bot.delete_state(message.from_user.id)
+    if not user:
+        # Грубый способ проверки, у нас UID от 6 символов
+        if args.startswith(config['affilate']['prefix']):
+            uid = args.replace(config['affilate']['prefix'], "")
+            refferer = db.get_user(uid, name_id="uid")
+            if refferer: refferer_id = refferer['id']
+
+        db.create_user(message.from_user, refferer_id=refferer_id)
+        user = db.get_user(message.from_user.id)
 
     text = _(user['language_code'], 'start_text')
     kb = MenuKeyboard.home(user)
 
     if user['role'] in ['manager', 'admin']:
-        args = extract_arguments(message.text)
-
         if args.startswith("order"):
             # Открыть сделку
             order_id = args.replace("order", "")
@@ -56,6 +60,9 @@ def start_handler(message):
                 key_string='inline_admin_notification_get_ticket',
                 data=callback_data_admin_work_open_ticket+ticket_id
             )
+
+    # Очищает любое состояние после вызова команды
+    bot.delete_state(message.from_user.id)
 
     bot.send_message(
         message.chat.id,
